@@ -238,8 +238,6 @@ io.on("connection", (socket) => {
     io.to(cam.pole_code).emit("showCameras", await getCamerasWithStatus(cam.pole_code) );
     // io.to(cam.pole_code).emit("showCameras", getPoleCameras(cam.pole_code) );
     io.emit("showAllCameras", getAllCamerasWithStatus() );
-    const s = await getStatisticsCameras();
-    console.log( '---------------------------------------------------- ',s );
     io.emit("showStatisticsCameras", getStatisticsCameras() );
   });
   

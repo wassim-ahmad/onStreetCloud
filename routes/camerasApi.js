@@ -259,7 +259,8 @@ router.get("/cameras_with_status/:pole_code", verifyToken, requirePermission("vi
     logger.info("get cameras status: ",{ admin: req.user, pole_code: req.params.pole_code });
     const pole_code = req.params.pole_code;
     const camerasCount = await cameraModel.getCamerasCountByPoleCode(pole_code);
-    const onlineCamerasCount = await getOnlinePoleCameras().length;
+    const onlineCamerasCount = await getOnlinePoleCameras(pole_code).length;
+    console.log('=================== ',await getOnlinePoleCameras());
     const offlineCamerasCount = parseInt(camerasCount) - parseInt(onlineCamerasCount);
     const cameras = await getCamerasWithStatus(pole_code);
 
@@ -302,6 +303,7 @@ router.get("/cameras_all_with_status", verifyToken, requirePermission("view_came
     logger.info("get all cameras status: ",{ admin: req.user });
     const camerasCount = await cameraModel.getCamerasTotalCount();
     const onlineCamerasCount = await allOnlineCameras().length;
+    console.log('');
     const offlineCamerasCount = parseInt(camerasCount) - parseInt(onlineCamerasCount);
     const cameras = await getAllCamerasWithStatus();
 

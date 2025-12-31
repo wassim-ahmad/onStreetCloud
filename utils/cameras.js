@@ -95,6 +95,7 @@ function getPoleCameras(pole_code) {
 
 // Return only online cameras for a specific pole
 function getOnlinePoleCameras(pole_code) {
+  console.log(online_cameras);
   return online_cameras.filter(camera => camera.pole_code === pole_code);
 }
 
