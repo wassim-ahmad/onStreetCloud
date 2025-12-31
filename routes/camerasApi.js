@@ -8,7 +8,7 @@ const Pagination = require('../utils/pagination');
 const { getCamerasWithStatus , excecuteCameraBySocket , getAllCamerasWithStatus} = require('../app');
 const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
-const { allOnlineCameras , getPoleCameras } = require("../utils/cameras");
+const { allOnlineCameras , getOnlinePoleCameras } = require("../utils/cameras");
 
 
 // Get all cameras without pagination
@@ -259,7 +259,7 @@ router.get("/cameras_with_status/:pole_code", verifyToken, requirePermission("vi
     logger.info("get cameras status: ",{ admin: req.user, pole_code: req.params.pole_code });
     const pole_code = req.params.pole_code;
     const camerasCount = await cameraModel.getCamerasCountByPoleCode(pole_code);
-    const onlineCamerasCount = await getPoleCameras().length;
+    const onlineCamerasCount = await getOnlinePoleCameras().length;
     const offlineCamerasCount = parseInt(camerasCount) - parseInt(onlineCamerasCount);
     const cameras = await getCamerasWithStatus(pole_code);
 
