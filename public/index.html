@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Device & Camera Test</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .status { padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+    .online { background: #d4f7d4; }
+    .offline { background: #f7d4d4; }
+  </style>
+</head>
+<body>
+
+  <img id="entry" width="100" height="100" src="" alt="">
+  <img id="crob" width="100" height="100" src="" alt="">
+  <img id="exit" width="100" height="100" src="" alt="">
+
+  <br>
+    <video id="video_1" width="320" height="180" controls></video>
+  <br>
+    <video id="video_2" width="320" height="180" controls></video>
+  <br>
+
+
+  show location: 
+  <a href="/location/1"><br>-->><br></a>
+
+  =====================================
+  <br>
+  create location: 
+  <a href="/create_location"><br>-->><br></a>
+  =====================================
+  <h1>Poles</h1>
+  <div id="poles"></div>
+
+  <h1>Resources</h1>
+  <div id="resources"></div>
+
+  <script>
+    const port = 9000;
+    document.addEventListener('DOMContentLoaded', function () {
+      console.log('DOM is ready');
+
+      const port = window.location.port
+        ? `:${window.location.port}`
+        : '';
+
+      const baseUrl = `${window.location.protocol}//${window.location.hostname}${port}`;
+
+      const entryImg = document.getElementById('entry');
+      const cropImg  = document.getElementById('crob');
+      const exitImg  = document.getElementById('exit');
+      
+      const video_1  = document.getElementById('video_1');
+      const video_2  = document.getElementById('video_2');
+
+
+      if (entryImg) {
+        // entryImg.src = `${baseUrl}/uploads/tickets/1766053597894-1702821807logo.png.png`;
+      }
+
+      if (cropImg) {
+        // cropImg.src = `${baseUrl}/uploads/tickets/1766053597896-1702821889splash_screen_image.png.png`;
+      }
+
+      if (exitImg) {
+        // exitImg.src = `${baseUrl}/uploads/tickets/1766053597903-logo-light.png`;
+      }
+
+      if (video_1) {
+        video_1.src = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+      }
+
+      if (video_2) {
+        video_2.src = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4";
+      }
+    });
+    
+    const socket = io(`${window.location.protocol}//${window.location.hostname}:${port}`);
+
+    // const socket = io('http://localhost:9090');
+    let socketId = null;
+    let resources = document.getElementById("resources");
+
+    // save socket id
+    socket.on('returnSocketId', (socket_id) => {
+      socketId = socket_id
+    })
+
+    // Example: listen for updates from Server A
+    socket.on("sendCloudFront", (data) => {
+      const container = document.getElementById("poles");
+      container.innerHTML = ""; // clear old
+
+      data.forEach(device => {
+        console.log(device)
+        const div = document.createElement("div");
+        div.className = "status-" +device.status;
+        div.innerText = `${device.router_ip} → ${device.status == 0 ? '🔴 offline' : '🟢 online'}`;
+        const div2 = document.createElement('div');
+        div2.innerText = `${device.code}`;
+        div.appendChild(div2);
+        const a = document.createElement('a');
+        a.href = "/show/" + device.code; 
+        a.innerText = " Show";
+        div.appendChild(a);
+        const btn = document.createElement('button');
+        btn.textContent = 'Get Resources';
+        btn.onclick = () => getResources(device.code);
+        div.appendChild(btn);
+        const btn2 = document.createElement('button');
+        btn2.textContent = 'Restart';
+        btn2.onclick = () => restart(device.code);
+        div.appendChild(btn2);
+        container.appendChild(div);
+      });
+    });
+
+    // fetch("/showDevices")
+    //   .then(res => res.json())
+    //   .then(data => {
+    //   const container = document.getElementById("poles");
+    //     container.innerHTML = ""; // clear old
+
+    //     data.forEach(device => {
+    //       const div = document.createElement("div");
+    //       div.className = "status-" +device.status;
+    //       div.innerText = `${device.router_ip} → ${device.status == 0 ? '🔴 offline' : '🟢 online'}`;
+    //       const div2 = document.createElement('div');
+    //       div2.innerText = `${device.code}`;
+    //       div.appendChild(div2);
+    //       const a = document.createElement('a');
+    //       a.href = "/show/" + device.code; 
+    //       a.innerText = " Show";
+    //       div.appendChild(a);
+    //       // const a2 = document.createElement('a');
+    //       // a2.id = 'resources_link';
+    //       // a2.href = "/file-server-resources/" + device.code; 
+    //       // a2.innerText = " - Resources";
+    //       // div.appendChild(a2);
+    //       const btn = document.createElement('button');
+    //       btn.textContent = 'Get Resources';
+    //       btn.onclick = () => getResources(device.code);
+    //       div.appendChild(btn);
+    //       container.appendChild(div);
+    //     });
+    //   })
+    //   .catch(err => console.error(err));
+
+      function getResources(pole_code)
+      {
+        alert(pole_code)
+        socket.emit('orderResources',pole_code,socketId);
+        resources.innerText = '';
+      }
+
+      function restart(pole_code)
+      {
+        socket.emit('restartOrder',pole_code);
+      }
+
+      socket.on("showServerResources", (data) => {
+        alert(data.pole_code);
+        const title = document.createElement("h3");
+        title.textContent = `Resources for pole ${data.pole_code}`;
+        resources.appendChild(title);
+
+        for (const [key, value] of Object.entries(data)) {
+          const div = document.createElement("div");
+
+          if (typeof value === "object" && value !== null) {
+            let innerHTML = `<strong>${key}:</strong><br>`;
+            for (const [key2, value2] of Object.entries(value)) {
+              innerHTML += `<span style="margin-left:15px;">${key2}: ${JSON.stringify(value2)}</span><br>`;
+            }
+            div.innerHTML = innerHTML;
+          } else {
+            div.innerHTML = `<strong>${key}:</strong> ${value}`;
+          }
+
+          resources.appendChild(div);
+        }
+        // document.getElementById("resources").innerText = JSON.stringify(data, null, 2);
+      });
+
+      socket.on("notification", (notification) => {
+        // alert(notification.title +' -> '+notification.message);
+      })
+  </script>
+  <style>
+    .status-0{
+      background-color: red;
+      color:white;
+    }
+    .status-1{
+      background-color: blue;
+      color:white;
+    }
+  </style>
+</body>
+</html>

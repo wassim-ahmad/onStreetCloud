@@ -1,0 +1,432 @@
+const express = require('express');
+const path = require('path');
+const router = express.Router();
+const multer = require("multer");
+// const upload = multer();
+const fs = require('fs');
+const { verifyToken } = require('../config/auth');
+const omcticketModel = require('../models/Omcticket');
+const cancelledTicketsModel = require('../models/Cancelledticket');
+const Pagination = require('../utils/pagination');
+const logger = require('../utils/logger');
+const { requirePermission } = require("../middleware/permission_middleware");
+
+const UPLOAD_DIR = path.join(__dirname, '../uploads/omctickets');
+
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOAD_DIR);
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+const upload = multer({ storage });
+
+// get all tickets without paginate
+router.get('/omc-tickets-all', verifyToken, requirePermission("view_omcticket"), async (req, res) => {
+  try {
+    logger.info("get all omc tickets without paginate.", { admin: req.user });
+
+    const tickets = await omcticketModel.getTickets();
+
+    logger.success("get all omc tickets without paginate successfully.", { admin: req.user });
+    res.json({
+      message: 'Tickets fetched successfully',
+      data: tickets,
+    });
+  } catch (err) {
+    logger.error('get all omc tickets without paginate failed.', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err });
+  }
+});
+
+// get tickets paginate with total count
+router.get('/omc-tickets', verifyToken, requirePermission("view_omcticket"), async (req, res) => {
+  try {
+    logger.info("get omc tickets:", { admin: req.user });
+
+    const page_id = parseInt(req.query.page) || 1;
+    const currentPage = page_id;
+    const pageUri = '/omc-tickets';
+    const perPage = parseInt(req.query.perPage) || 9;
+
+    const totalCount = await omcticketModel.getTicketsTotalCount();
+    const offset = (page_id - 1) * perPage;
+
+    const Paginate = new Pagination(totalCount, currentPage, pageUri, perPage);
+    const ticketsPaginate = await omcticketModel.getTicketsPaginate(perPage, offset);
+
+    logger.success("get omc tickets successfully", { admin: req.user, total: totalCount });
+    res.json({
+      message: 'Tickets fetched successfully',
+      total: totalCount,
+      data: ticketsPaginate,
+      links: Paginate.links()
+    });
+  } catch (err) {
+    logger.error('get omc tickets paginate failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err });
+  }
+});
+
+// get ticket by id
+router.get('/omc-ticket/:ticket_id', verifyToken, requirePermission("view_omcticket"), async (req, res) => {
+  try {
+    const ticket_id = req.params.ticket_id;
+    logger.info("get omc ticket by id:", { admin: req.user, ticket_id });
+
+    const ticket = await omcticketModel.getTicketById(ticket_id);
+
+    logger.success("get omc ticket by id successfully", { admin: req.user, ticket });
+    res.json({
+      message: 'Ticket fetched successfully',
+      data: ticket
+    });
+  } catch (err) {
+    logger.error('get omc ticket by id failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err });
+  }
+});
+
+// create new ticket
+router.post('/create-omc-ticket', verifyToken, requirePermission("create_omcticket"), upload.fields([
+    { name: 'entry_image', maxCount: 1 },
+    { name: 'crop_image', maxCount: 1 },
+    { name: 'exit_image', maxCount: 1 }
+  ])
+  , async (req, res) => {
+  try {
+    logger.info("create omc ticket:", { admin: req.user, body: req.body });
+
+    const {
+      camera_id,
+      spot_number,
+      plate_number,
+      plate_code,
+      plate_city,
+      confidence,
+      entry_time,
+      exit_time,
+      video_1,
+      video_2,
+      parkonic_trip_id,
+      entry_image_path,
+      exit_clip_path
+    } = req.body;
+
+    if (!camera_id || !spot_number || !plate_number || !entry_time) {
+      return res.status(400).json({ message: "camera_id, spot_number, plate_number, and entry_time are required" });
+    }
+
+    const entry_image = req.files?.entry_image
+        ? `uploads/omctickets/${req.files.entry_image[0].filename}`
+        : null;
+
+      const crop_image = req.files?.crop_image
+        ? `uploads/omctickets/${req.files.crop_image[0].filename}`
+        : null;
+
+      const exit_image = req.files?.exit_image
+        ? `uploads/omctickets/${req.files.exit_image[0].filename}`
+        : null;
+
+    const result = await omcticketModel.createTicket({
+      camera_id,
+      spot_number,
+      plate_number,
+      plate_code: plate_code || null,
+      plate_city: plate_city || null,
+      confidence: confidence || null,
+      entry_time,
+      exit_time: exit_time || null,
+      parkonic_trip_id: parkonic_trip_id || null,
+      entry_image: entry_image,
+      crop_image: crop_image,
+      exit_image: exit_image,
+      video_1: video_1 || null,
+      video_2: video_2 || null,
+      entry_image_path: entry_image_path || null,
+      exit_clip_path: exit_clip_path || null,
+    });
+
+    logger.success("create omc ticket successfully", { admin: req.user, result });
+    res.json({
+      message: 'Ticket created successfully',
+      data: result,
+    });
+
+  } catch (err) {
+    logger.error('create omc ticket failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  }
+});
+
+// update ticket
+router.put('/update-omc-ticket/:id', upload.none(), verifyToken, requirePermission("edit_omcticket"), async (req, res) => {
+  try {
+    logger.info("update omc ticket:", { admin: req.user, body: req.body });
+    const id = req.params.id;
+
+    const {
+      camera_id,
+      spot_number,
+      plate_number,
+      plate_code,
+      plate_city,
+      confidence,
+      entry_time,
+      exit_time,
+      parkonic_trip_id,
+      entry_image,
+      crop_image,
+      exit_image,
+      video_1,
+      video_2,
+      entry_image_path,
+      exit_clip_path
+    } = req.body;
+
+    const result = await omcticketModel.updateTicket(id, {
+      camera_id,
+      spot_number,
+      plate_number,
+      plate_code,
+      plate_city,
+      confidence,
+      entry_time,
+      exit_time,
+      parkonic_trip_id,
+      entry_image,
+      crop_image,
+      exit_image,
+      video_1,
+      video_2,
+      entry_image_path,
+      exit_clip_path
+    });
+
+    if (!result) {
+      return res.status(400).json({ message: 'Nothing to update' });
+    }
+
+    logger.success("update omc ticket successfully", { admin: req.user, result });
+    res.json({
+      message: 'Ticket updated successfully',
+      data: result
+    });
+
+  } catch (err) {
+    logger.error('update omc ticket failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  }
+});
+
+// delete ticket
+router.delete('/delete-omc-ticket/:id', verifyToken, requirePermission("delete_omcticket"), async (req, res) => {
+  try {
+    logger.info("delete omc ticket:", { admin: req.user, ticket_id: req.params.id });
+    const ticket_id = parseInt(req.params.id, 10); // convert to number
+    if (!ticket_id) {
+      return res.status(400).json({ message: 'Ticket ID is required and must be a number' });
+    }
+
+    const result = await omcticketModel.deleteTicket(ticket_id);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    logger.success("delete omc ticket successfully", { admin: req.user, result });
+    res.json({ message: 'Ticket deleted successfully', id: ticket_id, data: result });
+
+  } catch (err) {
+    logger.error('delete omc ticket failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  }
+});
+
+// get tickets by camera_id with pagination
+router.get(
+  '/omc-tickets/by-camera/:camera_id',
+  verifyToken,
+  requirePermission("view_omcticket"),
+  async (req, res) => {
+    try {
+      logger.info("get omc tickets by camera:", {
+        admin: req.user,
+        camera_id: req.params.camera_id
+      });
+
+      const camera_id = Number(req.params.camera_id);
+      const page = Number(req.query.page) || 1;
+      const perPage = Number(req.query.perPage) || 9;
+      const offset = (page - 1) * perPage;
+      const pageUri = `/omc-tickets/by-camera/${camera_id}`;
+
+      if (!camera_id) {
+        return res.status(400).json({ message: "camera_id is required" });
+      }
+
+      // total count BY CAMERA
+      const totalCountResult = await omcticketModel.getTicketsTotalCountByCamera(camera_id);
+      const totalCount = totalCountResult[0]?.total || 0;
+
+      // paginated tickets BY CAMERA
+      const ticketsPaginate = await omcticketModel.getTicketsPaginateByCamera(
+        camera_id,
+        perPage,
+        offset
+      );
+
+      const Paginate = new Pagination(totalCount, page, pageUri, perPage);
+
+      logger.success("get omc tickets by camera successfully", {
+        admin: req.user,
+        camera_id,
+        total: totalCount
+      });
+
+      res.json({
+        message: 'Tickets fetched successfully',
+        total: totalCount,
+        data: ticketsPaginate,
+        links: Paginate.links()
+      });
+
+    } catch (err) {
+      logger.error('get omc tickets by camera paginate failed', {
+        admin: req.user,
+        error: err.message
+      });
+
+      console.error(err);
+      res.status(500).json({
+        message: 'Database error',
+        error: err.message
+      });
+    }
+  }
+);
+
+// get tickets by location_id with pagination
+router.get(
+  '/omc-tickets/by-location/:location_id',
+  verifyToken,
+  requirePermission("view_omcticket"),
+  async (req, res) => {
+    try {
+      const location_id = Number(req.params.location_id);
+      const page = Number(req.query.page) || 1;
+      const perPage = Number(req.query.perPage) || 9;
+      const offset = (page - 1) * perPage;
+      const pageUri = `/omc-tickets/by-location/${location_id}`;
+
+      logger.info("get omc tickets by location:", {
+        admin: req.user,
+        location_id
+      });
+
+      if (!location_id) {
+        return res.status(400).json({ message: "location_id is required" });
+      }
+
+      // total count by location
+      const totalCountResult =
+        await omcticketModel.getTicketsTotalCountByLocation(location_id);
+      const totalCount = totalCountResult[0]?.total || 0;
+
+      // paginated tickets by location
+      const tickets =
+        await omcticketModel.getTicketsPaginateByLocation(
+          location_id,
+          perPage,
+          offset
+        );
+
+      const Paginate = new Pagination(totalCount, page, pageUri, perPage);
+
+      logger.success("get omc tickets by location successfully", {
+        admin: req.user,
+        location_id,
+        total: totalCount
+      });
+
+      res.json({
+        message: 'Tickets fetched successfully',
+        total: totalCount,
+        data: tickets,
+        links: Paginate.links()
+      });
+
+    } catch (err) {
+      logger.error('get omc tickets by location paginate failed', {
+        admin: req.user,
+        error: err.message
+      });
+
+      console.error(err);
+      res.status(500).json({
+        message: 'Database error',
+        error: err.message
+      });
+    }
+  }
+);
+
+// cancel ticket
+router.post('/cancel-omc-ticket/:id', verifyToken, requirePermission("cancel_ticket"), async (req, res) => {
+  try {
+    logger.info("cancel omc ticket:", { admin: req.user, ticket_id: req.params.id });
+    const ticket_id = parseInt(req.params.id, 10); // convert to number
+    
+    if (!ticket_id) {
+      return res.status(400).json({ message: 'Ticket ID is required and must be a number' });
+    }
+
+    const old_ticket = await omcticketModel.getTicketById(ticket_id);
+    if (!old_ticket[0]) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+    delete old_ticket[0].id;
+    old_ticket[0].type = 'OMC';
+
+    const cancel_result = await cancelledTicketsModel.createTicket(old_ticket[0]);
+
+    if (cancel_result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Ticket not cancelled !!!' });
+    }
+
+    const result = await omcticketModel.deleteTicket(ticket_id);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Ticket not found!' });
+    }
+
+    logger.success("OMC Ticket cancelled successfully", { admin: req.user, result });
+    res.json({ message: 'Ticket cancelled successfully', id: ticket_id, data: result });
+
+  } catch (err) {
+    logger.error('OMC Ticket cancelled failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  }
+});
+
+
+
+
+
+
+
+module.exports = router;

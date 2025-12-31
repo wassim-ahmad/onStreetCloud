@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Device & Camera Test</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .status { padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; }
+    .online { background: #d4f7d4; }
+    .offline { background: #f7d4d4; }
+  </style>
+</head>
+<body>
+
+
+  <h1>Cameras</h1>
+  <div id="cameras"></div>
+
+
+
+  <script>
+    port = 9000;
+    const socket = io(`${window.location.protocol}//${window.location.hostname}:${port}`);
+
+    // const socket = io('http://localhost:9090');
+    const pathParts = window.location.pathname.split("/");
+    const pole_code = pathParts[pathParts.length - 1];
+    socket.emit("frontJoinToPoleCode", pole_code);
+
+    socket.on("showCameras", (data) => {
+      console.log(data,'28');
+      const container2 = document.getElementById("cameras");
+      container2.innerHTML = "";
+      data.forEach(cam => {
+        const div = document.createElement("div");
+        div.className = "status-" + (cam.device.status);
+        div.innerText = `${cam.pole_code} → ${cam.device.camera_ip} → ${cam.device.status}`;
+        const a = document.createElement('a');
+        a.href = "/show/" + cam.pole_code; 
+        a.innerText = " Show";
+        div.appendChild(a);
+        container2.appendChild(div);
+      });
+    });
+
+    // fetch("/showCameras/"+pole_code)
+    //   .then(res => res.json())
+    //   .then(data => {
+    //     const container2 = document.getElementById("cameras");
+    //     container2.innerHTML = "";
+    //     data.forEach(cam => {
+    //       const div = document.createElement("div");
+    //       div.className = "status-" + (cam.device.status);
+    //       div.innerText = `${cam.pole_code} → ${cam.device.camera_ip} → ${cam.device.status}`;
+    //       const a = document.createElement('a');
+    //       a.href = "/show/" + cam.pole_code; 
+    //       a.innerText = " Show";
+    //       div.appendChild(a);
+    //       container2.appendChild(div);
+    //     });
+    //   })
+    //   .catch(err => console.error(err));
+
+    //   socket.on("notification", (notification) => {
+    //     alert(notification.title +' -> '+notification.message);
+    //   })
+  </script>
+  <style>
+    .status-false{
+      background-color: red;
+      color:white;
+    }
+    .status-true{
+      background-color: blue;
+      color:white;
+    }
+  </style>
+</body>
+</html>

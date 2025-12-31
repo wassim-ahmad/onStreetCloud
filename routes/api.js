@@ -1,0 +1,33 @@
+const express = require('express');
+const router = express.Router();
+const authRoutes = require("./authApi");
+const locationsRoutes = require("./locationsApi");
+const zonesRoutes = require("./zonesApi");
+const PolesRoutes = require("./polesApi");
+const CamerasRoutes = require("./camerasApi");
+const NotificationsRoutes = require("./notificationsApi");
+const PermissionsRoutes = require("./permissionsApi.js");
+const UsersRoutes = require("./usersApi.js");
+const ExecuteCamerasRoutes = require("./camerasExecuteApi.js");
+const StatisticsRoutes = require("./statisticsApi.js");
+const TicketsRoutes = require("./ticketsApi.js");
+const OmcticketsRoutes = require("./omcticketsApi.js");
+const SubmittedticketsRoutes = require("./submittedApi.js");
+const CancelledticketsRoutes = require("./cancelledApi.js");
+
+router.use(authRoutes);
+router.use(locationsRoutes);
+router.use(zonesRoutes);
+router.use(PolesRoutes);
+router.use(CamerasRoutes);
+router.use(NotificationsRoutes);
+router.use(PermissionsRoutes);
+router.use(UsersRoutes);
+router.use(ExecuteCamerasRoutes);
+router.use(StatisticsRoutes);
+router.use(TicketsRoutes);
+router.use(OmcticketsRoutes);
+router.use(SubmittedticketsRoutes);
+router.use(CancelledticketsRoutes);
+
+module.exports = router;

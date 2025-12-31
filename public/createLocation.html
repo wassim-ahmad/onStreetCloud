@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Location - Google Maps</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    #map { height: 60vh; width: 100%; margin-bottom: 10px; }
+    input, button { display: block; margin: 5px 0; }
+  </style>
+</head>
+<body>
+
+<h2>Create New Location</h2>
+
+<div id="map"></div>
+
+<input type="text" id="name" placeholder="Location Name" />
+<input type="text" id="description" placeholder="Description" />
+<input type="text" id="camera_user" placeholder="Camera User" />
+<input type="text" id="camera_pass" placeholder="Camera Password" />
+<input type="color" id="border_color" value="#FF0000" /> Border Color
+<input type="color" id="fill_color" value="#FFA500" /> Fill Color
+
+<button id="submitBtn">Create Location</button>
+
+<script>
+let map;
+let polygon;
+let polygonPoints = [];
+
+// Initialize Google Map
+function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 25.1972, lng: 55.2744 },
+    zoom: 14
+  });
+
+  polygon = new google.maps.Polygon({
+    paths: polygonPoints,
+    strokeColor: document.getElementById('border_color').value,
+    strokeWeight: 3,
+    fillColor: document.getElementById('fill_color').value,
+    fillOpacity: 0.4,
+    editable: true
+  });
+
+  polygon.setMap(map);
+
+  // Click on map to add points
+  map.addListener('click', function(e) {
+    const point = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+    polygonPoints.push(point);
+
+    polygon.setPath(polygonPoints);
+  });
+}
+
+// Update polygon colors when input changes
+document.getElementById('border_color').addEventListener('change', function() {
+  polygon.setOptions({ strokeColor: this.value });
+});
+document.getElementById('fill_color').addEventListener('change', function() {
+  polygon.setOptions({ fillColor: this.value });
+});
+
+// Submit form
+document.getElementById('submitBtn').addEventListener('click', function() {
+  if (polygonPoints.length < 3) {
+    alert('Polygon must have at least 3 points.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('name', document.getElementById('name').value);
+  formData.append('description', document.getElementById('description').value);
+  formData.append('boundary', JSON.stringify(polygonPoints));
+  formData.append('camera_user', document.getElementById('camera_user').value);
+  formData.append('camera_pass', document.getElementById('camera_pass').value);
+  formData.append('border_color', document.getElementById('border_color').value);
+  formData.append('fill_color', document.getElementById('fill_color').value);
+
+  fetch('http://127.0.0.1:9000/api/create-location', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywidXNlcm5hbWUiOiJ3YXNzaW0iLCJpYXQiOjE3NjExMjE2MjZ9.99T-3a6xwgt_LfMeYTBNciYcOvJXRNSBPxmSqP3TSPc'
+    },
+    body: formData
+  })
+  .then(res => res.json())
+  .then(res => console.log('Location created:', res))
+  .catch(err => console.error(err));
+});
+</script>
+
+<!-- Replace YOUR_API_KEY with your Google Maps API key -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDiZzD47-2q8ZdE_Q2qedlxwpYHgwilPac&callback=initMap" async defer></script>
+<!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcLkkNYzj-hTqOnSrYhAQoTUIaKYJteE&callback=initMap" async defer></script> -->
+
+</body>
+</html>

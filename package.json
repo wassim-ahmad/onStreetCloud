@@ -1,0 +1,30 @@
+{
+  "name": "onstreetospcloude",
+  "version": "1.0.0",
+  "description": "On street OSP cloud",
+  "main": "app.js",
+  "scripts": {
+    "test": "general test"
+  },
+  "author": "Parkonic",
+  "license": "ISC",
+  "keywords": [],
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bcrypt-nodejs": "^0.0.3",
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "http": "^0.0.1-security",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.30.1",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.2",
+    "mysql2": "^3.15.0",
+    "path": "^0.12.7",
+    "socket.io": "^4.8.1",
+    "winston": "^3.18.3"
+  }
+}

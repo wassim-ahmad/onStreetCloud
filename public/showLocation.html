@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dubai Location Map - Google Maps</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body { height: 100%; margin: 0; padding: 0; }
+    #map { height: 100%; width: 100%; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- Load Google Maps API with callback -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDiZzD47-2q8ZdE_Q2qedlxwpYHgwilPac&callback=initMap" async defer></script>
+<!-- <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcLkkNYzj-hTqOnSrYhAQoTUIaKYJteE&callback=initMap" async defer></script> -->
+
+<script>
+  function initMap() {
+    const path = window.location.pathname;
+    const location_id = path.split("/").filter(Boolean).pop();
+
+    // fetch(`http://127.0.0.1:9000/api/location/${location_id}`, {
+    //   headers: { Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywidXNlcm5hbWUiOiJ3YXNzaW0iLCJpYXQiOjE3NjEwMzI5MjV9.UwAsTOgf_RYBWRq8uWPCJVCRRIQyoLidcOfNH7mUutc' }
+    // })
+    fetch(`http://52.50.19.130:9000/api/location/${location_id}`, {
+      headers: { Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywidXNlcm5hbWUiOiJ3YXNzaW0iLCJpYXQiOjE3NjEwMzI5MjV9.UwAsTOgf_RYBWRq8uWPCJVCRRIQyoLidcOfNH7mUutc' }
+    })
+    .then(res => res.json())
+    .then(res => {
+      const locations = res.data; // res.data is an array
+      console.log(res);
+      if (!locations || locations.length === 0) {
+        console.warn('No locations found!');
+        return;
+      }
+
+      const location = locations[0]; // use first location
+
+      let coordinates = [];
+
+      if (location.boundary) {
+        coordinates = typeof location.boundary === 'string' 
+            ? JSON.parse(location.boundary) 
+            : location.boundary;
+
+        coordinates = coordinates.map(c => ({ lat: +c.lat, lng: +c.lng }));
+      }
+
+      if (coordinates.length === 0) {
+        console.warn('No boundary coordinates found!');
+        return;
+      }
+
+      // Initialize map
+      const map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 14,
+        center: { lat: coordinates[0].lat, lng: coordinates[0].lng },
+        mapTypeId: 'roadmap'
+      });
+
+      // Draw polygon
+      const polygonCoords = coordinates.map(c => ({ lat: c.lat, lng: c.lng }));
+      const polygon = new google.maps.Polygon({
+        paths: polygonCoords,
+        strokeColor: location.border_color,
+        strokeOpacity: 0.8,
+        strokeWeight: 4,
+        fillColor: location.fill_color,
+        fillOpacity: 0.4
+      });
+      polygon.setMap(map);
+
+      // Fit map to polygon
+      const bounds = new google.maps.LatLngBounds();
+      polygonCoords.forEach(c => bounds.extend(c));
+      map.fitBounds(bounds);
+    })
+    .catch(err => console.error(err));
+  }
+</script>
+
+</body>
+</html>

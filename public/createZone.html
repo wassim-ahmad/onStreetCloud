@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Zone Inside Location</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    #map { height: 60vh; width: 100%; margin-bottom: 10px; }
+    input, select, button { display: block; margin: 7px 0; padding: 6px; width: 300px; }
+  </style>
+<script 
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDiZzD47-2q8ZdE_Q2qedlxwpYHgwilPac&libraries=geometry&callback=initMap" 
+  async 
+  defer>
+</script>
+
+</head>
+<body>
+
+<h2>Create Zone Inside Location</h2>
+
+<select id="locationSelect">
+  <option value="">-- Select Location --</option>
+</select>
+
+<div id="map"></div>
+
+<input type="text" id="name" placeholder="Zone Name" />
+<label>Border Color</label>
+<input type="color" id="border_color" value="#FF0000" />
+
+<label>Fill Color</label>
+<input type="color" id="fill_color" value="#FFA500" />
+
+<button id="submitBtn">Create Zone</button>
+
+<script>
+const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywidXNlcm5hbWUiOiJ3YXNzaW0iLCJpYXQiOjE3NjExMjE2MjZ9.99T-3a6xwgt_LfMeYTBNciYcOvJXRNSBPxmSqP3TSPc"; // <-- Change this
+const API_BASE = "http://127.0.0.1:9000/api";
+
+let map, locationPolygon, zonePolygon;
+let zonePoints = [];
+
+// This function is required by Google Maps
+function initMap() {
+  map = new google.maps.Map(document.getElementById("map"), {
+    zoom: 5,
+    center: { lat: 25.276987, lng: 55.296249 } // Default center (Dubai)
+  });
+
+  // Load locations into dropdown
+  fetch(`${API_BASE}/locations`, {
+    headers: { Authorization: `Bearer ${TOKEN}` }
+  })
+  .then(res => res.json())
+  .then(res => {
+    res.data.forEach(loc => {
+      const opt = document.createElement("option");
+      opt.value = loc.id;
+      opt.textContent = loc.name;
+      document.getElementById("locationSelect").appendChild(opt);
+    });
+  });
+}
+
+window.initMap = initMap; // ✅ Make initMap global
+
+document.getElementById("locationSelect").addEventListener("change", function() {
+  if (!this.value) return;
+  loadLocation(this.value);
+});
+
+function loadLocation(location_id) {
+  zonePoints = [];
+
+  fetch(`${API_BASE}/location/${location_id}`, {
+    headers: { Authorization: `Bearer ${TOKEN}` }
+  })
+  .then(res => res.json())
+  .then(res => {
+    const location = res.data[0];
+    // let boundary = JSON.parse(location.boundary).map(p => ({ lat: +p.lat, lng: +p.lng }));
+    let boundary = JSON.parse(location.boundary).map(p => {
+    let lat = Number(p.lat);
+    let lng = Number(p.lng);
+
+  // Auto-fix reversed coordinates
+  if (Math.abs(lat) > 90) [lat, lng] = [lng, lat];
+
+  return { lat, lng };
+});
+console.log("BOUNDARY:", boundary);
+
+
+    map.setCenter(boundary[0]);
+    map.setZoom(14);
+
+    if (locationPolygon) locationPolygon.setMap(null);
+
+    locationPolygon = new google.maps.Polygon({
+      paths: boundary,
+      strokeColor: location.border_color,
+      strokeOpacity: 1,
+      strokeWeight: 4,
+      fillColor: location.fill_color,
+      fillOpacity: 0.25,
+      clickable: false // 👈 allows clicks to pass through
+    });
+
+    locationPolygon.setMap(map);
+
+    loadZones(location_id);
+
+    if (zonePolygon) zonePolygon.setMap(null);
+
+    zonePolygon = new google.maps.Polygon({
+      paths: [],
+      strokeColor: document.getElementById("border_color").value,
+      strokeWeight: 3,
+      fillColor: document.getElementById("fill_color").value,
+      fillOpacity: 0.45,
+      editable: true
+    });
+    zonePolygon.setMap(map);
+
+    map.addListener("click", (event) => {
+      console.log("CLICKED:", event.latLng.lat(), event.latLng.lng()); // ✅ Add this
+      const latLng = event.latLng;
+
+      if (!google.maps.geometry.poly.containsLocation(latLng, locationPolygon)) {
+        alert("⚠️ Zone points must be inside location!");
+        return;
+      }
+
+      zonePoints.push({ lat: latLng.lat(), lng: latLng.lng() });
+      zonePolygon.setPath(zonePoints);
+    });
+  });
+}
+
+function loadZones(location_id) {
+  fetch(`${API_BASE}/zones-location/${location_id}`, {
+    headers: { Authorization: `Bearer ${TOKEN}` }
+  })
+  .then(res => res.json())
+  .then(res => {
+    res.data.forEach(zone => {
+      let coords = JSON.parse(zone.coordinates).map(p => ({ lat: +p.lat, lng: +p.lng }));
+      new google.maps.Polygon({
+        paths: coords,
+        strokeColor: zone.border_color,
+        strokeWeight: 2,
+        fillColor: zone.fill_color,
+        fillOpacity: 0.30
+      }).setMap(map);
+    });
+  });
+}
+
+document.getElementById("border_color").addEventListener("input", () => {
+  if (zonePolygon) zonePolygon.setOptions({ strokeColor: border_color.value });
+});
+document.getElementById("fill_color").addEventListener("input", () => {
+  if (zonePolygon) zonePolygon.setOptions({ fillColor: fill_color.value });
+});
+
+document.getElementById("submitBtn").addEventListener("click", () => {
+  const location_id = locationSelect.value;
+  if (!location_id) return alert("Select location first!");
+  if (zonePoints.length < 3) return alert("Zone must have at least 3 points.");
+
+  const formData = new FormData();
+  formData.append("name", name.value);
+  formData.append("coordinates", JSON.stringify(zonePoints));
+  formData.append("location_id", location_id);
+  formData.append("border_color", border_color.value);
+  formData.append("fill_color", fill_color.value);
+
+  fetch(`${API_BASE}/create-zone`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${TOKEN}` },
+    body: formData
+  })
+  .then(res => res.json())
+  .then(() => {
+    alert("✅ Zone created!");
+    loadLocation(location_id);
+  });
+});
+</script>
+
+<!-- ✅ Google Maps Script (with geometry library and callback) -->
+
+
+</body>
+</html>
