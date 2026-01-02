@@ -199,7 +199,7 @@ async function getStatisticsCameras(){
   }
 }
 
-module.exports = { getDevicesWithStatus,getCamerasWithStatus, excecuteCameraBySocket, syncCameraBySocket,getAllCamerasWithStatus };
+module.exports = { getDevicesWithStatus,getCamerasWithStatus, excecuteCameraBySocket, syncCameraBySocket,getAllCamerasWithStatus, fetchAllDevicesFromDB };
 
 // Routes
 const apiRoutes = require('./routes/api');
@@ -218,11 +218,37 @@ io.on("connection", (socket) => {
   console.log("Server B connected:", socket.id);
   socket.emit('returnSocketId',socket.id);
 
-  socket.on("onlineDevice", (device) => {
+  socket.on("onlineDevice", async (device) => {
     const devices = deviceOn(socket.id, device);
     // console.log(device.router_ip);
     socket.join(device.code);
-    io.emit("sendCloudFront", getDevicesWithStatus() );
+    // data to send front 
+    const totalCount = await poleModel.getPolesTotalCount();
+    const poles = getDevicesWithStatus();
+    const onlinePolesCount = await getOnlineDevices().length;
+    const offlinePolesCount = parseInt(totalCount) - parseInt(onlinePolesCount);
+    // // pagiantion on array not from the model
+    // const page = parseInt(req.query.page) || 1;
+    // const limit = parseInt(req.query.limit) || 15;
+
+    // const startIndex = (page - 1) * limit;
+    // const endIndex = page * limit;
+    // const paginatedItems = poles.slice(startIndex, endIndex);
+
+    // const totalPages = Math.ceil(totalCount / limit);
+
+    io.emit("sendCloudFront", {
+      total: totalCount,
+      online: onlinePolesCount,
+      offline: offlinePolesCount,
+      data: poles,
+      // links: {
+      //   page,
+      //   limit,
+      //   totalCount,
+      //   totalPages,
+      // }
+    });
   });
 
   socket.on("frontJoinToPoleCode", (pole_code) => {

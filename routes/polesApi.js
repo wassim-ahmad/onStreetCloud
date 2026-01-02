@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const upload = multer();
 const { verifyToken } = require('../config/auth');
-const { getDevicesWithStatus } = require('../app');
+const { getDevicesWithStatus , fetchAllDevicesFromDB } = require('../app');
 const poleModel = require('../models/Pole');
 const Pagination = require('../utils/pagination');
 const logger = require('../utils/logger');
@@ -83,7 +83,7 @@ router.post('/create-pole', verifyToken, requirePermission("create_pole"), uploa
       lat: lat || null,
       lng: lng || null,
     });
-
+    await fetchAllDevicesFromDB();
     logger.success("create pole successfully ", {admin: req.user, result:result});
     res.json({
       message: 'Pole created successfully',
@@ -117,6 +117,7 @@ router.put('/update-pole/:id', upload.none(), verifyToken, requirePermission("ed
       return res.status(400).json({ message: 'Nothing to update' });
     }
 
+    await fetchAllDevicesFromDB();
     logger.success("update pole successfully ", {admin: req.user, result:result});
     res.json({
       message: 'Pole updated successfully',
@@ -141,6 +142,7 @@ router.delete('/delete-pole/:id', verifyToken, requirePermission("delete_pole"),
       return res.status(400).json({ message: 'Pole not found or already deleted' });
     }
 
+    await fetchAllDevicesFromDB();
     logger.success("delete pole successfully ", {admin: req.user, pole_id: req.params.id, result:result});
     res.json({
       message: 'Pole deleted successfully',
@@ -164,6 +166,7 @@ router.put('/restore-pole/:id', verifyToken, requirePermission("restore_pole"), 
       return res.status(400).json({ message: 'Pole not found or not deleted' });
     }
 
+    await fetchAllDevicesFromDB();
     logger.success("restore pole successfully ", {admin: req.user, result:result});
     res.json({
       message: 'Pole restored successfully',

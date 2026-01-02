@@ -174,6 +174,8 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `exit_image` LONGTEXT NULL, \
     `entry_image_path` VARCHAR(255) NULL, \
     `exit_clip_path` VARCHAR(255) NULL, \
+    `video_1` VARCHAR(255) NULL, \
+    `video_2` VARCHAR(255) NULL, \
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, \
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
     PRIMARY KEY (`id`), \

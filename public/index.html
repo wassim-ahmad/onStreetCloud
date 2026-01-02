@@ -91,31 +91,34 @@
 
     // Example: listen for updates from Server A
     socket.on("sendCloudFront", (data) => {
+      console.log(data);
       const container = document.getElementById("poles");
       container.innerHTML = ""; // clear old
 
-      data.forEach(device => {
-        console.log(device)
-        const div = document.createElement("div");
-        div.className = "status-" +device.status;
-        div.innerText = `${device.router_ip} → ${device.status == 0 ? '🔴 offline' : '🟢 online'}`;
-        const div2 = document.createElement('div');
-        div2.innerText = `${device.code}`;
-        div.appendChild(div2);
-        const a = document.createElement('a');
-        a.href = "/show/" + device.code; 
-        a.innerText = " Show";
-        div.appendChild(a);
-        const btn = document.createElement('button');
-        btn.textContent = 'Get Resources';
-        btn.onclick = () => getResources(device.code);
-        div.appendChild(btn);
-        const btn2 = document.createElement('button');
-        btn2.textContent = 'Restart';
-        btn2.onclick = () => restart(device.code);
-        div.appendChild(btn2);
-        container.appendChild(div);
-      });
+      if(data.data){
+        data.data.forEach(device => {
+          console.log(device)
+          const div = document.createElement("div");
+          div.className = "status-" +device.status;
+          div.innerText = `${device.router_ip} → ${device.status == 0 ? '🔴 offline' : '🟢 online'}`;
+          const div2 = document.createElement('div');
+          div2.innerText = `${device.code}`;
+          div.appendChild(div2);
+          const a = document.createElement('a');
+          a.href = "/show/" + device.code; 
+          a.innerText = " Show";
+          div.appendChild(a);
+          const btn = document.createElement('button');
+          btn.textContent = 'Get Resources';
+          btn.onclick = () => getResources(device.code);
+          div.appendChild(btn);
+          const btn2 = document.createElement('button');
+          btn2.textContent = 'Restart';
+          btn2.onclick = () => restart(device.code);
+          div.appendChild(btn2);
+          container.appendChild(div);
+        });
+      }
     });
 
     // fetch("/showDevices")
