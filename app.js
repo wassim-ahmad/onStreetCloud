@@ -236,6 +236,13 @@ io.on("connection", (socket) => {
     // const paginatedItems = poles.slice(startIndex, endIndex);
 
     // const totalPages = Math.ceil(totalCount / limit);
+    // const data = {
+    //     total: totalCount,
+    //     online: onlinePolesCount,
+    //     offline: offlinePolesCount,
+    //     data: poles,
+    // }
+    // console.log(data);
 
     io.emit("sendCloudFront", {
       total: totalCount,
@@ -290,7 +297,35 @@ io.on("connection", (socket) => {
   socket.on("disconnect", async () => {
     const alert = await getDeviceBySocketId(socket.id);
     deviceOff(socket.id);
-    io.emit("sendCloudFront", getDevicesWithStatus());
+
+      // data to send front 
+    const totalCount = await poleModel.getPolesTotalCount();
+    const poles = getDevicesWithStatus();
+    const onlinePolesCount = await getOnlineDevices().length;
+    const offlinePolesCount = parseInt(totalCount) - parseInt(onlinePolesCount);
+    // // pagiantion on array not from the model
+    // const page = parseInt(req.query.page) || 1;
+    // const limit = parseInt(req.query.limit) || 15;
+
+    // const startIndex = (page - 1) * limit;
+    // const endIndex = page * limit;
+    // const paginatedItems = poles.slice(startIndex, endIndex);
+
+    // const totalPages = Math.ceil(totalCount / limit);
+
+    io.emit("sendCloudFront", {
+      total: totalCount,
+      online: onlinePolesCount,
+      offline: offlinePolesCount,
+      data: poles,
+      // links: {
+      //   page,
+      //   limit,
+      //   totalCount,
+      //   totalPages,
+      // }
+    });
+
     try {
       const users = await userModel.getActiveUsersWithViewNotificationPermission();
       const user_ids = users.map(u => u.user_id);
