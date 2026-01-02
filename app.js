@@ -222,7 +222,7 @@ io.on("connection", (socket) => {
     const devices = deviceOn(socket.id, device);
     // console.log(device.router_ip);
     socket.join(device.code);
-    // data to send front 
+    // data to send front poles
     const totalCount = await poleModel.getPolesTotalCount();
     const poles = getDevicesWithStatus();
     const onlinePolesCount = await getOnlineDevices().length;
@@ -268,9 +268,72 @@ io.on("connection", (socket) => {
     socket.join(cam.pole_code);
     time =  moment().format('h:mm a');
     cameraOn(socket.id, cam , cam.pole_code);
-    io.to(cam.pole_code).emit("showCameras", await getCamerasWithStatus(cam.pole_code) );
+
+    // data to send front camers by pole
+    const camerasCount = await cameraModel.getCamerasCountByPoleCode(cam.pole_code);
+    const onlineCamerasCount = await getOnlinePoleCameras(cam.pole_code).length;
+    const offlineCamerasCount = parseInt(camerasCount) - parseInt(onlineCamerasCount);
+    const cameras = await getCamerasWithStatus(cam.pole_code);
+
+    // // pagiantion on array not from the model
+    // const page = parseInt(req.query.page) || 1;
+    // const limit = parseInt(req.query.limit) || 15;
+
+    // const startIndex = (page - 1) * limit;
+    // const endIndex = page * limit;
+
+    // const paginatedItems = cameras.slice(startIndex, endIndex);
+
+    // const totalPages = Math.ceil(camerasCount / limit);
+
+    io.to(cam.pole_code).emit("showCameras",{
+      total: camerasCount,
+      online: onlineCamerasCount,
+      offline: offlineCamerasCount,
+      data: cameras,
+      // links: {
+      //   page,
+      //   limit,
+      //   camerasCount,
+      //   totalPages,
+      // }
+    });
+
+    // res.json({
+    //   message: 'All Cameras by pole_code with status',
+    //   total: camerasCount,
+    //   online: onlineCamerasCount,
+
+    //   offline: offlineCamerasCount,
+    //   data: paginatedItems,
+    //   links: {
+    //     page,
+    //     limit,
+    //     camerasCount,
+    //     totalPages,
+    //   }
+    // });
+
     // io.to(cam.pole_code).emit("showCameras", getPoleCameras(cam.pole_code) );
-    io.emit("showAllCameras", getAllCamerasWithStatus() );
+
+    // data to send front all camers
+    const all_camerasCount = await cameraModel.getCamerasTotalCount();
+    const all_onlineCamerasCount = await allOnlineCameras().length;
+    const all_offlineCamerasCount = parseInt(all_camerasCount) - parseInt(all_onlineCamerasCount);
+    const all_cameras = await getAllCamerasWithStatus();
+
+    io.emit("showAllCameras", {
+      total: all_camerasCount,
+      online: all_onlineCamerasCount,
+      offline: all_offlineCamerasCount,
+      data: all_cameras,
+      // links: {
+      //   page,
+      //   limit,
+      //   camerasCount,
+      //   totalPages,
+      // }
+    });
     io.emit("showStatisticsCameras", getStatisticsCameras() );
   });
   
@@ -288,9 +351,56 @@ io.on("connection", (socket) => {
     
     cameraOff(socket.id,cam,cam.pole_code);
 
-    io.to(cam.pole_code).emit("showCameras", await getCamerasWithStatus(cam.pole_code) );
+    // data to send front camers by pole
+    const camerasCount = await cameraModel.getCamerasCountByPoleCode(cam.pole_code);
+    const onlineCamerasCount = await getOnlinePoleCameras(cam.pole_code).length;
+    const offlineCamerasCount = parseInt(camerasCount) - parseInt(onlineCamerasCount);
+    const cameras = await getCamerasWithStatus(cam.pole_code);
+
+    // // pagiantion on array not from the model
+    // const page = parseInt(req.query.page) || 1;
+    // const limit = parseInt(req.query.limit) || 15;
+
+    // const startIndex = (page - 1) * limit;
+    // const endIndex = page * limit;
+
+    // const paginatedItems = cameras.slice(startIndex, endIndex);
+
+    // const totalPages = Math.ceil(camerasCount / limit);
+
+    io.to(cam.pole_code).emit("showCameras",{
+      total: camerasCount,
+      online: onlineCamerasCount,
+      offline: offlineCamerasCount,
+      data: cameras,
+      // links: {
+      //   page,
+      //   limit,
+      //   camerasCount,
+      //   totalPages,
+      // }
+    });
+    
     // io.to(cam.pole_code).emit("showCameras", getPoleCameras(cam.pole_code) );
-    io.emit("showAllCameras", await getAllCamerasWithStatus() );
+
+    // data to send front all camers
+    const all_camerasCount = await cameraModel.getCamerasTotalCount();
+    const all_onlineCamerasCount = await allOnlineCameras().length;
+    const all_offlineCamerasCount = parseInt(all_camerasCount) - parseInt(all_onlineCamerasCount);
+    const all_cameras = await getAllCamerasWithStatus();
+
+    io.emit("showAllCameras", {
+      total: all_camerasCount,
+      online: all_onlineCamerasCount,
+      offline: all_offlineCamerasCount,
+      data: all_cameras,
+      // links: {
+      //   page,
+      //   limit,
+      //   camerasCount,
+      //   totalPages,
+      // }
+    });
     io.emit("showStatisticsCameras", await getStatisticsCameras() );
   });
 
@@ -298,7 +408,7 @@ io.on("connection", (socket) => {
     const alert = await getDeviceBySocketId(socket.id);
     deviceOff(socket.id);
 
-      // data to send front 
+      // data to send front poles
     const totalCount = await poleModel.getPolesTotalCount();
     const poles = getDevicesWithStatus();
     const onlinePolesCount = await getOnlineDevices().length;

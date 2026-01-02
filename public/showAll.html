@@ -29,22 +29,24 @@
     socket.emit("frontJoinToPoleCode", pole_code);
 
     socket.on("showAllCameras", (data) => {
-      console.log(data,'28');
+      console.log(data,'29');
       const container2 = document.getElementById("cameras");
       container2.innerHTML = "";
-      if(!data)return ;
-      data.forEach(cam => {
-        if (!cam) return;
-        console.log('this cam ',cam.camera_ip);
-        const div = document.createElement("div");
-        div.className = "status-" + (cam.status);
-        div.innerText = `${cam.pole_code} → ${cam.camera_ip} → ${cam.status}`;
-        const a = document.createElement('a');
-        a.href = "/show/" + cam.pole_code; 
-        a.innerText = " Show";
-        div.appendChild(a);
-        container2.appendChild(div);
-      });
+
+      if(data.data){
+        data.data.forEach(cam => {
+          if (!cam) return;
+          console.log('this cam ',cam.camera_ip);
+          const div = document.createElement("div");
+          div.className = "status-" + (cam.status);
+          div.innerText = `${cam.pole_code} → ${cam.camera_ip} → ${cam.status}`;
+          const a = document.createElement('a');
+          a.href = "/show/" + cam.pole_code; 
+          a.innerText = " Show";
+          div.appendChild(a);
+          container2.appendChild(div);
+        });
+      }
     });
 
     // fetch("/showCameras/"+pole_code)
@@ -70,11 +72,11 @@
     //   })
   </script>
   <style>
-    .status-false{
+    .status-0{
       background-color: red;
       color:white;
     }
-    .status-true{
+    .status-1{
       background-color: blue;
       color:white;
     }
