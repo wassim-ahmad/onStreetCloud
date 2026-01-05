@@ -161,10 +161,15 @@ connection.query('\
 CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionDetails.ticket_table + '` ( \
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT, \
     `camera_id` INT UNSIGNED NOT NULL, \
+    `parkonic_token` LONGTEXT NULL, \
     `spot_number` INT NOT NULL, \
+    `camera_ip` VARCHAR(255) NULL, \
     `plate_number` VARCHAR(20) NOT NULL, \
     `plate_code` VARCHAR(10) NULL, \
     `plate_city` VARCHAR(50) NULL, \
+    `status` INT NULL, \
+    `zone_name` VARCHAR(255) NULL, \
+    `zone_region` VARCHAR(255) NULL, \
     `confidence` INT NULL, \
     `entry_time` DATETIME NOT NULL, \
     `exit_time` DATETIME NULL, \
@@ -174,8 +179,8 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `exit_image` LONGTEXT NULL, \
     `entry_image_path` VARCHAR(255) NULL, \
     `exit_clip_path` VARCHAR(255) NULL, \
-    `video_1` VARCHAR(255) NULL, \
-    `video_2` VARCHAR(255) NULL, \
+    `entry_video_url` VARCHAR(255) NULL, \
+    `exit_video_url` VARCHAR(255) NULL, \
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, \
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
     PRIMARY KEY (`id`), \
@@ -189,10 +194,15 @@ connection.query('\
 CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionDetails.omcticket_table + '` ( \
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT, \
     `camera_id` INT UNSIGNED NOT NULL, \
+    `parkonic_token` LONGTEXT NULL, \
     `spot_number` INT NOT NULL, \
+    `camera_ip` VARCHAR(255) NULL, \
     `plate_number` VARCHAR(20) NOT NULL, \
     `plate_code` VARCHAR(10) NULL, \
     `plate_city` VARCHAR(50) NULL, \
+    `status` INT NULL, \
+    `zone_name` VARCHAR(255) NULL, \
+    `zone_region` VARCHAR(255) NULL, \
     `confidence` INT NULL, \
     `entry_time` DATETIME NOT NULL, \
     `exit_time` DATETIME NULL, \
@@ -202,8 +212,8 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `exit_image` LONGTEXT NULL, \
     `entry_image_path` VARCHAR(255) NULL, \
     `exit_clip_path` VARCHAR(255) NULL, \
-    `video_1` VARCHAR(255) NULL, \
-    `video_2` VARCHAR(255) NULL, \
+    `entry_video_url` VARCHAR(255) NULL, \
+    `exit_video_url` VARCHAR(255) NULL, \
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, \
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
     PRIMARY KEY (`id`), \
@@ -217,10 +227,15 @@ connection.query('\
 CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionDetails.submitted_tickets_table + '` ( \
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT, \
     `camera_id` INT UNSIGNED NOT NULL, \
+    `parkonic_token` LONGTEXT NULL, \
     `spot_number` INT NOT NULL, \
+    `camera_ip` VARCHAR(255) NULL, \
     `plate_number` VARCHAR(20) NOT NULL, \
     `plate_code` VARCHAR(10) NULL, \
     `plate_city` VARCHAR(50) NULL, \
+    `status` INT NULL, \
+    `zone_name` VARCHAR(255) NULL, \
+    `zone_region` VARCHAR(255) NULL, \
     `confidence` INT NULL, \
     `entry_time` DATETIME NOT NULL, \
     `exit_time` DATETIME NULL, \
@@ -230,8 +245,8 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `exit_image` LONGTEXT NULL, \
     `entry_image_path` VARCHAR(255) NULL, \
     `exit_clip_path` VARCHAR(255) NULL, \
-    `video_1` VARCHAR(255) NULL, \
-    `video_2` VARCHAR(255) NULL, \
+    `entry_video_url` VARCHAR(255) NULL, \
+    `exit_video_url` VARCHAR(255) NULL, \
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, \
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
     PRIMARY KEY (`id`), \
@@ -245,10 +260,15 @@ connection.query('\
 CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionDetails.cancelled_tickets_table + '` ( \
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT, \
     `camera_id` INT UNSIGNED NOT NULL, \
+    `parkonic_token` LONGTEXT NULL, \
     `spot_number` INT NOT NULL, \
+    `camera_ip` VARCHAR(255) NULL, \
     `plate_number` VARCHAR(20) NOT NULL, \
     `plate_code` VARCHAR(10) NULL, \
     `plate_city` VARCHAR(50) NULL, \
+    `status` INT NULL, \
+    `zone_name` VARCHAR(255) NULL, \
+    `zone_region` VARCHAR(255) NULL, \
     `confidence` INT NULL, \
     `entry_time` DATETIME NOT NULL, \
     `exit_time` DATETIME NULL, \
@@ -258,8 +278,8 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `exit_image` LONGTEXT NULL, \
     `entry_image_path` VARCHAR(255) NULL, \
     `exit_clip_path` VARCHAR(255) NULL, \
-    `video_1` VARCHAR(255) NULL, \
-    `video_2` VARCHAR(255) NULL, \
+    `entry_video_url` VARCHAR(255) NULL, \
+    `exit_video_url` VARCHAR(255) NULL, \
     `type` VARCHAR(50) NULL, \
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, \
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \

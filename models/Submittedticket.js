@@ -48,23 +48,40 @@ exports.getTickets = () => {
     SELECT 
       t.id,
       t.camera_id,
+      t.parkonic_token,
       c.access_point_id,
       t.spot_number,
+      t.camera_ip,
       t.plate_number,
       t.plate_code,
       t.plate_city,
+      t.status,
+      t.zone_name,
+      t.zone_region,
       t.confidence,
-      t.entry_time,
-      t.exit_time,
+      DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
+      DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
       t.entry_image,
       t.crop_image,
       t.exit_image,
-      t.video_1,
-      t.video_2,
-      t.created_at
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.entry_video_url
+      END AS entry_video_url,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.exit_video_url
+      END AS exit_video_url,
+
+      t.created_at,
+      t.updated_at
     FROM submitted t
     INNER JOIN cameras c ON c.id = t.camera_id
     ORDER BY t.id DESC
@@ -78,34 +95,40 @@ exports.getTicketsPaginate = (perPage, offset) => {
     SELECT
       t.id,
       t.camera_id,
+      t.parkonic_token,
       c.access_point_id,
       t.spot_number,
+      t.camera_ip,
       t.plate_number,
       t.plate_code,
       t.plate_city,
+      t.status,
+      t.zone_name,
+      t.zone_region,
       t.confidence,
-      t.entry_image,
-      t.crop_image,
-      t.exit_image,
-      
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.video_1
-      END AS video_1,
-
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.video_2
-      END AS video_2,
-
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
-      DATE_FORMAT(t.created_at, '%Y-%m-%d %H:%i:%s') AS created_at
+      t.entry_image,
+      t.crop_image,
+      t.exit_image,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.entry_video_url
+      END AS entry_video_url,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.exit_video_url
+      END AS exit_video_url,
+
+      t.created_at,
+      t.updated_at
     FROM submitted t
     INNER JOIN cameras c ON c.id = t.camera_id
     ORDER BY t.id DESC
@@ -121,34 +144,40 @@ exports.getTicketById = (ticket_id) => {
     SELECT 
       t.id,
       t.camera_id,
+      t.parkonic_token,
       c.access_point_id,
       t.spot_number,
+      t.camera_ip,
       t.plate_number,
       t.plate_code,
       t.plate_city,
+      t.status,
+      t.zone_name,
+      t.zone_region,
       t.confidence,
-      t.entry_image,
-      t.crop_image,
-      t.exit_image,
-      
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.video_1
-      END AS video_1,
-
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.video_2
-      END AS video_2,
-
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
-      DATE_FORMAT(t.created_at, '%Y-%m-%d %H:%i:%s') AS created_at
+      t.entry_image,
+      t.crop_image,
+      t.exit_image,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.entry_video_url
+      END AS entry_video_url,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.exit_video_url
+      END AS exit_video_url,
+
+      t.created_at,
+      t.updated_at
     FROM submitted t
     INNER JOIN cameras c ON c.id = t.camera_id
     WHERE t.id = ${Number(ticket_id)}
@@ -296,34 +325,40 @@ exports.getTicketsPaginateByCamera = (camera_id, perPage, offset) => {
     SELECT
       t.id,
       t.camera_id,
+      t.parkonic_token,
       c.access_point_id,
       t.spot_number,
+      t.camera_ip,
       t.plate_number,
       t.plate_code,
       t.plate_city,
+      t.status,
+      t.zone_name,
+      t.zone_region,
       t.confidence,
-      t.entry_image,
-      t.crop_image,
-      t.exit_image,
-      
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.video_1
-      END AS video_1,
-
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.video_2
-      END AS video_2,
-
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
-      DATE_FORMAT(t.created_at, '%Y-%m-%d %H:%i:%s') AS created_at
+      t.entry_image,
+      t.crop_image,
+      t.exit_image,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.entry_video_url
+      END AS entry_video_url,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.exit_video_url
+      END AS exit_video_url,
+
+      t.created_at,
+      t.updated_at
 
     FROM submitted t
     INNER JOIN cameras c ON c.id = t.camera_id
@@ -341,34 +376,40 @@ exports.getTicketsPaginateByLocation = (location_id, perPage, offset) => {
     SELECT
       t.id,
       t.camera_id,
+      t.parkonic_token,
       c.access_point_id,
       t.spot_number,
+      t.camera_ip,
       t.plate_number,
       t.plate_code,
       t.plate_city,
+      t.status,
+      t.zone_name,
+      t.zone_region,
       t.confidence,
-      t.entry_image,
-      t.crop_image,
-      t.exit_image,
-      
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.video_1
-      END AS video_1,
-
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.video_2
-      END AS video_2,
-
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
-      DATE_FORMAT(t.created_at, '%Y-%m-%d %H:%i:%s') AS created_at
+      t.entry_image,
+      t.crop_image,
+      t.exit_image,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.entry_video_url
+      END AS entry_video_url,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.exit_video_url
+      END AS exit_video_url,
+
+      t.created_at,
+      t.updated_at
     FROM submitted t
     INNER JOIN cameras c ON c.id = t.camera_id
     INNER JOIN poles p ON p.id = c.pole_id

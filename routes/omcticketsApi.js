@@ -6,6 +6,7 @@ const multer = require("multer");
 const fs = require('fs');
 const { verifyToken } = require('../config/auth');
 const omcticketModel = require('../models/Omcticket');
+const cameraModel = require('../models/Camera'); // camera model
 const cancelledTicketsModel = require('../models/Cancelledticket');
 const Pagination = require('../utils/pagination');
 const logger = require('../utils/logger');
@@ -106,24 +107,25 @@ router.post('/create-omc-ticket', verifyToken, requirePermission("create_omctick
   try {
     logger.info("create omc ticket:", { admin: req.user, body: req.body });
 
-    const {
-      camera_id,
-      spot_number,
-      plate_number,
-      plate_code,
-      plate_city,
-      confidence,
+     const {
+      parkonic_token,
+      access_point_id,
+      number,
+      code,
+      city,
+      status,
       entry_time,
       exit_time,
-      video_1,
-      video_2,
-      parkonic_trip_id,
-      entry_image_path,
-      exit_clip_path
+      spot_number,
+      camera_ip,
+      zone_name,
+      zone_region,
+      entry_video_url,
+      exit_video_url,
     } = req.body;
 
-    if (!camera_id || !spot_number || !plate_number || !entry_time) {
-      return res.status(400).json({ message: "camera_id, spot_number, plate_number, and entry_time are required" });
+    if (!camera_ip || !parkonic_token || !status || !access_point_id) {
+      return res.status(400).json({ message: "camera_ip, parkonic_token, status and access_point_id are required" });
     }
 
     const entry_image = req.files?.entry_image
@@ -138,23 +140,29 @@ router.post('/create-omc-ticket', verifyToken, requirePermission("create_omctick
         ? `uploads/omctickets/${req.files.exit_image[0].filename}`
         : null;
 
+    const camera_id = await cameraModel.getCameraByIpAndAccessPointId(access_point_id,camera_ip);
+    if (!camera_id[0]) {
+      return res.status(400).json({ message: "camera not found" });
+    }
     const result = await omcticketModel.createTicket({
-      camera_id,
-      spot_number,
-      plate_number,
-      plate_code: plate_code || null,
-      plate_city: plate_city || null,
-      confidence: confidence || null,
-      entry_time,
+      parkonic_token,
+      access_point_id,
+      number: number || null,
+      code: code || null,
+      city: city || null,
+      status,
+      entry_time: entry_time || null,
       exit_time: exit_time || null,
-      parkonic_trip_id: parkonic_trip_id || null,
+      spot_number: spot_number || null,
+      camera_ip,
+      camera_id:camera_id[0].id,
+      zone_name: zone_name || null,
+      zone_region: zone_region || null,
+      entry_video_url: entry_video_url || null,
+      exit_video_url: exit_video_url || null,
       entry_image: entry_image,
       crop_image: crop_image,
       exit_image: exit_image,
-      video_1: video_1 || null,
-      video_2: video_2 || null,
-      entry_image_path: entry_image_path || null,
-      exit_clip_path: exit_clip_path || null,
     });
 
     logger.success("create omc ticket successfully", { admin: req.user, result });

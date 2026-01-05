@@ -129,6 +129,34 @@ exports.getCameraById = (camera_id) => {
   return mainQuery(query);
 };
 
+exports.getCameraByIpAndAccessPointId = (access_point_id,camera_ip) => {
+  const query = `
+    SELECT 
+      c.id,
+      c.camera_ip,
+      c.number_of_parking,
+      c.access_point_id,
+      c.pole_id,
+      p.code AS pole_code,
+      p.router_ip AS pole_router_ip,
+      p.router_vpn_ip AS pole_router_vpn_ip,
+      p.lat AS pole_lat,
+      p.lng AS pole_lng,
+      p.zone_id AS pole_zone_id,
+      z.name AS zone_name,
+      DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
+      DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
+    FROM cameras c
+    JOIN poles p ON c.pole_id = p.id
+    JOIN zones z ON p.zone_id = z.id
+    WHERE c.access_point_id = '${Number(access_point_id)}'
+      AND c.camera_ip = '${camera_ip}'
+      AND c.deleted_at IS NULL
+    LIMIT 1;
+  `;
+  return mainQuery(query);
+};
+
 exports.getDeletedCameraById = (camera_id) => {
   const query = `
     SELECT 
