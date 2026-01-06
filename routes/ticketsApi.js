@@ -196,41 +196,28 @@ router.put('/update-ticket/:id', upload.none(), verifyToken, requirePermission("
     const id = req.params.id;
 
     const {
-      camera_id,
-      spot_number,
-      plate_number,
-      plate_code,
-      plate_city,
+      number,
+      code,
+      city,
       confidence,
-      entry_time,
       exit_time,
-      parkonic_trip_id,
-      entry_image,
-      crop_image,
-      exit_image,
-      video_1,
-      video_2,
-      entry_image_path,
-      exit_clip_path
+      entry_time,
     } = req.body;
 
+    const diffMs = new Date(exit_time) - new Date(entry_time) ;
+
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    const parkingDuration = `${hours}h ${minutes}m`.toString();
+
     const result = await ticketModel.updateTicket(id, {
-      camera_id,
-      spot_number,
-      plate_number,
-      plate_code,
-      plate_city,
-      confidence,
-      entry_time,
-      exit_time,
-      parkonic_trip_id,
-      entry_image,
-      crop_image,
-      exit_image,
-      video_1,
-      video_2,
-      entry_image_path,
-      exit_clip_path
+      number: number || null,
+      code: code || null,
+      city: city || null,
+      confidence: confidence || null,
+      exit_time: exit_time || null,
+      parking_duration: parkingDuration || null,
     });
 
     if (!result) {
@@ -443,7 +430,7 @@ router.post('/cancel-ocr-ticket/:id', verifyToken, requirePermission("cancel_tic
 });
 
 // submit ticket
-router.post('/cancel-ocr-ticket/:id', verifyToken, requirePermission("submit_ticket"), async (req, res) => {
+router.post('/submit-ocr-ticket/:id', verifyToken, requirePermission("submit_ticket"), async (req, res) => {
   try {
     logger.info("submit ocr ticket:", { admin: req.user, ticket_id: req.params.id });
     const ticket_id = parseInt(req.params.id, 10); // convert to number
@@ -462,7 +449,7 @@ router.post('/cancel-ocr-ticket/:id', verifyToken, requirePermission("submit_tic
     const cancel_result = await cancelledTicketsModel.createTicket(old_ticket[0]);
 
     if (cancel_result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Ticket not cancelled !!!' });
+      return res.status(404).json({ message: 'Ticket not submitted !!!' });
     }
 
     const result = await ticketModel.deleteTicket(ticket_id);
@@ -471,11 +458,11 @@ router.post('/cancel-ocr-ticket/:id', verifyToken, requirePermission("submit_tic
       return res.status(404).json({ message: 'Ticket not found!' });
     }
 
-    logger.success("OCR Ticket cancelled successfully", { admin: req.user, result });
-    res.json({ message: 'Ticket cancelled successfully', id: ticket_id, data: result });
+    logger.success("OCR Ticket submitted successfully", { admin: req.user, result });
+    res.json({ message: 'Ticket submitted successfully', id: ticket_id, data: result });
 
   } catch (err) {
-    logger.error('OCR Ticket cancelled failed', { admin: req.user, error: err.message });
+    logger.error('OCR Ticket submitted failed', { admin: req.user, error: err.message });
     console.error(err);
     res.status(500).json({ message: 'Database error', error: err.message });
   }

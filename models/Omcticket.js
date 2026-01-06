@@ -260,42 +260,22 @@ exports.createTicket = async (data) => {
 
 exports.updateTicket = async (id, data) => {
   const {
-    camera_id,
-    spot_number,
     plate_number,
     plate_code,
     plate_city,
     confidence,
-    entry_time,
     exit_time,
-    parkonic_trip_id,
-    entry_image,
-    crop_image,
-    exit_image,
-    video_1,
-    video_2,
-    entry_image_path,
-    exit_clip_path
+    parking_duration,
   } = data;
 
   const updates = [];
 
-  if (camera_id) updates.push(`camera_id='${camera_id}'`);
-  if (spot_number) updates.push(`spot_number='${spot_number}'`);
   if (plate_number) updates.push(`plate_number='${plate_number}'`);
   if (plate_code) updates.push(`plate_code='${plate_code}'`);
   if (plate_city) updates.push(`plate_city='${plate_city}'`);
   if (confidence !== undefined) updates.push(`confidence='${confidence}'`);
-  if (entry_time) updates.push(`entry_time='${entry_time}'`);
   if (exit_time) updates.push(`exit_time='${exit_time}'`);
-  if (parkonic_trip_id) updates.push(`parkonic_trip_id='${parkonic_trip_id}'`);
-  if (entry_image) updates.push(`entry_image='${entry_image}'`);
-  if (crop_image) updates.push(`crop_image='${crop_image}'`);
-  if (exit_image) updates.push(`exit_image='${exit_image}'`);
-  if (video_1) updates.push(`video_1='${video_1}'`);
-  if (video_2) updates.push(`video_2='${video_2}'`);
-  if (entry_image_path) updates.push(`entry_image_path='${entry_image_path}'`);
-  if (exit_clip_path) updates.push(`exit_clip_path='${exit_clip_path}'`);
+  if (parking_duration) updates.push(`parking_duration='${parking_duration}'`);
 
   if (updates.length === 0) return null; // nothing to update
 

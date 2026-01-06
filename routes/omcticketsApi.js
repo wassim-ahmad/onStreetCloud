@@ -194,41 +194,28 @@ router.put('/update-omc-ticket/:id', upload.none(), verifyToken, requirePermissi
     const id = req.params.id;
 
     const {
-      camera_id,
-      spot_number,
-      plate_number,
-      plate_code,
-      plate_city,
+      number,
+      code,
+      city,
       confidence,
-      entry_time,
       exit_time,
-      parkonic_trip_id,
-      entry_image,
-      crop_image,
-      exit_image,
-      video_1,
-      video_2,
-      entry_image_path,
-      exit_clip_path
+      entry_time,
     } = req.body;
 
+    const diffMs = new Date(exit_time) - new Date(entry_time) ;
+
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    const parkingDuration = `${hours}h ${minutes}m`.toString();
+
     const result = await omcticketModel.updateTicket(id, {
-      camera_id,
-      spot_number,
-      plate_number,
-      plate_code,
-      plate_city,
-      confidence,
-      entry_time,
-      exit_time,
-      parkonic_trip_id,
-      entry_image,
-      crop_image,
-      exit_image,
-      video_1,
-      video_2,
-      entry_image_path,
-      exit_clip_path
+      number: number || null,
+      code: code || null,
+      city: city || null,
+      confidence: confidence || null,
+      exit_time: exit_time || null,
+      parking_duration: parkingDuration || null,
     });
 
     if (!result) {
