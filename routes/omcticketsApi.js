@@ -144,6 +144,14 @@ router.post('/create-omc-ticket', verifyToken, requirePermission("create_omctick
     if (!camera_id[0]) {
       return res.status(400).json({ message: "camera not found" });
     }
+
+    const diffMs = new Date(exit_time) - new Date(entry_time) ;
+
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    const parkingDuration = `${hours}h ${minutes}m`.toString();
+
     const result = await omcticketModel.createTicket({
       parkonic_token,
       access_point_id,
@@ -153,6 +161,7 @@ router.post('/create-omc-ticket', verifyToken, requirePermission("create_omctick
       status,
       entry_time: entry_time || null,
       exit_time: exit_time || null,
+      parking_duration: parkingDuration || null,
       spot_number: spot_number || null,
       camera_ip,
       camera_id:camera_id[0].id,

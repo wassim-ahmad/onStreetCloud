@@ -173,6 +173,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `confidence` INT NULL, \
     `entry_time` DATETIME NOT NULL, \
     `exit_time` DATETIME NULL, \
+    `parking_duration` VARCHAR(255) NULL, \
     `parkonic_trip_id` INT NULL, \
     `entry_image` LONGTEXT NULL, \
     `crop_image` LONGTEXT NULL, \
@@ -206,6 +207,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `confidence` INT NULL, \
     `entry_time` DATETIME NOT NULL, \
     `exit_time` DATETIME NULL, \
+    `parking_duration` VARCHAR(255) NULL, \
     `parkonic_trip_id` INT NULL, \
     `entry_image` LONGTEXT NULL, \
     `crop_image` LONGTEXT NULL, \
@@ -239,6 +241,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `confidence` INT NULL, \
     `entry_time` DATETIME NOT NULL, \
     `exit_time` DATETIME NULL, \
+    `parking_duration` VARCHAR(255) NULL, \
     `parkonic_trip_id` INT NULL, \
     `entry_image` LONGTEXT NULL, \
     `crop_image` LONGTEXT NULL, \
@@ -272,6 +275,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `confidence` INT NULL, \
     `entry_time` DATETIME NOT NULL, \
     `exit_time` DATETIME NULL, \
+    `parking_duration` VARCHAR(255) NULL, \
     `parkonic_trip_id` INT NULL, \
     `entry_image` LONGTEXT NULL, \
     `crop_image` LONGTEXT NULL, \

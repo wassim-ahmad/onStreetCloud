@@ -61,6 +61,7 @@ exports.getTickets = () => {
       t.confidence,
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+      t.parking_duration,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
@@ -108,6 +109,7 @@ exports.getTicketsPaginate = (perPage, offset) => {
       t.confidence,
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+      t.parking_duration,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
@@ -157,6 +159,7 @@ exports.getTicketById = (ticket_id) => {
       t.confidence,
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+      t.parking_duration,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
@@ -198,6 +201,7 @@ exports.createTicket = async (data) => {
     confidence,
     entry_time,
     exit_time,
+    parking_duration,
     parkonic_trip_id,
     entry_image,
     crop_image,
@@ -270,6 +274,7 @@ exports.updateTicket = async (id, data) => {
     confidence,
     entry_time,
     exit_time,
+    parking_duration,
     parkonic_trip_id,
     entry_image,
     crop_image,
@@ -290,6 +295,7 @@ exports.updateTicket = async (id, data) => {
   if (confidence !== undefined) updates.push(`confidence='${confidence}'`);
   if (entry_time) updates.push(`entry_time='${entry_time}'`);
   if (exit_time) updates.push(`exit_time='${exit_time}'`);
+  if (parking_duration) updates.push(`parking_duration='${exit_time}'`);
   if (parkonic_trip_id) updates.push(`parkonic_trip_id='${parkonic_trip_id}'`);
   if (entry_image) updates.push(`entry_image='${entry_image}'`);
   if (crop_image) updates.push(`crop_image='${crop_image}'`);
@@ -338,6 +344,7 @@ exports.getTicketsPaginateByCamera = (camera_id, perPage, offset) => {
       t.confidence,
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+      t.parking_duration,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
@@ -389,6 +396,7 @@ exports.getTicketsPaginateByLocation = (location_id, perPage, offset) => {
       t.confidence,
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+      t.parking_duration,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,

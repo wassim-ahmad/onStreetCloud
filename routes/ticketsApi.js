@@ -144,6 +144,16 @@ router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), u
     if (!camera_id[0]) {
       return res.status(400).json({ message: "camera not found" });
     }
+
+    const diffMs = new Date(exit_time) - new Date(entry_time) ;
+
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    const parkingDuration = `${hours}h ${minutes}m`.toString();
+    // console.log(typeof parkingDuration); // "string"
+    // console.log(parkingDuration); // "2h 0m"
+
     const result = await ticketModel.createTicket({
       parkonic_token,
       access_point_id,
@@ -153,6 +163,7 @@ router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), u
       status,
       entry_time: entry_time || null,
       exit_time: exit_time || null,
+      parking_duration: parkingDuration || null,
       spot_number: spot_number || null,
       camera_ip,
       camera_id:camera_id[0].id,
@@ -396,6 +407,45 @@ router.get(
 router.post('/cancel-ocr-ticket/:id', verifyToken, requirePermission("cancel_ticket"), async (req, res) => {
   try {
     logger.info("cancel ocr ticket:", { admin: req.user, ticket_id: req.params.id });
+    const ticket_id = parseInt(req.params.id, 10); // convert to number
+    
+    if (!ticket_id) {
+      return res.status(400).json({ message: 'Ticket ID is required and must be a number' });
+    }
+
+    const old_ticket = await ticketModel.getTicketById(ticket_id);
+    if (!old_ticket[0]) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+    delete old_ticket[0].id;
+    old_ticket[0].type = 'OCR';
+
+    const cancel_result = await cancelledTicketsModel.createTicket(old_ticket[0]);
+
+    if (cancel_result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Ticket not cancelled !!!' });
+    }
+
+    const result = await ticketModel.deleteTicket(ticket_id);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Ticket not found!' });
+    }
+
+    logger.success("OCR Ticket cancelled successfully", { admin: req.user, result });
+    res.json({ message: 'Ticket cancelled successfully', id: ticket_id, data: result });
+
+  } catch (err) {
+    logger.error('OCR Ticket cancelled failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  }
+});
+
+// submit ticket
+router.post('/cancel-ocr-ticket/:id', verifyToken, requirePermission("submit_ticket"), async (req, res) => {
+  try {
+    logger.info("submit ocr ticket:", { admin: req.user, ticket_id: req.params.id });
     const ticket_id = parseInt(req.params.id, 10); // convert to number
     
     if (!ticket_id) {

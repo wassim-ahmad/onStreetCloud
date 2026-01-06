@@ -61,6 +61,7 @@ exports.getTickets = () => {
       t.confidence,
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+      t.parking_duration,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
@@ -81,8 +82,8 @@ exports.getTickets = () => {
       END AS exit_video_url,
 
       t.created_at,
-      t.updated_at
-      t.type,
+      t.updated_at,
+      t.type
     FROM cancelled t
     INNER JOIN cameras c ON c.id = t.camera_id
     ORDER BY t.id DESC
@@ -109,6 +110,7 @@ exports.getTicketsPaginate = (perPage, offset) => {
       t.confidence,
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+      t.parking_duration,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
@@ -129,8 +131,8 @@ exports.getTicketsPaginate = (perPage, offset) => {
       END AS exit_video_url,
 
       t.created_at,
-      t.updated_at
-      t.type,
+      t.updated_at,
+      t.type
     FROM cancelled t
     INNER JOIN cameras c ON c.id = t.camera_id
     ORDER BY t.id DESC
@@ -159,6 +161,7 @@ exports.getTicketById = (ticket_id) => {
       t.confidence,
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+      t.parking_duration,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
@@ -179,8 +182,8 @@ exports.getTicketById = (ticket_id) => {
       END AS exit_video_url,
 
       t.created_at,
-      t.updated_at
-      t.type,
+      t.updated_at,
+      t.type
     FROM cancelled t
     INNER JOIN cameras c ON c.id = t.camera_id
     WHERE t.id = ${Number(ticket_id)}
@@ -194,60 +197,78 @@ exports.getTicketById = (ticket_id) => {
 exports.createTicket = async (data) => {
   const {
     camera_id,
+    parkonic_token,
     spot_number,
+    camera_ip,
     plate_number,
     plate_code,
     plate_city,
+    status,
+    zone_name,
+    zone_region,
     confidence,
     entry_time,
     exit_time,
+    parking_duration,
     parkonic_trip_id,
     entry_image,
     crop_image,
     exit_image,
-    video_1,
-    video_2,
     entry_image_path,
     exit_clip_path,
+    entry_video_url,
+    exit_video_url,
     type
   } = data;
 
   const query = `
     INSERT INTO cancelled (
       camera_id,
+      parkonic_token,
       spot_number,
+      camera_ip,
       plate_number,
       plate_code,
       plate_city,
+      status,
+      zone_name,
+      zone_region,
       confidence,
       entry_time,
       exit_time,
+      parking_duration,
       parkonic_trip_id,
       entry_image,
       crop_image,
       exit_image,
-      video_1,
-      video_2,
       entry_image_path,
       exit_clip_path,
+      entry_video_url,
+      exit_video_url,
       type
     ) VALUES (
       '${camera_id}',
-      '${spot_number}',
-      '${plate_number}',
-      '${plate_code}',
-      '${plate_city}',
-      '${confidence}',
-      '${entry_time}',
+      ${parkonic_token ? `'${parkonic_token}'` : 'NULL'},
+      ${spot_number ? `'${spot_number}'` : 'NULL'},
+      ${camera_ip ? `'${camera_ip}'` : 'NULL'},
+      ${plate_number ? `'${plate_number}'` : 'NULL'},
+      ${plate_code ? `'${plate_code}'` : 'NULL'},
+      ${plate_city ? `'${plate_city}'` : 'NULL'},
+      ${status ? `'${status}'` : 'NULL'},
+      ${zone_name ? `'${zone_name}'` : 'NULL'},
+      ${zone_region ? `'${zone_region}'` : 'NULL'},
+      ${confidence ? `'${confidence}'` : 'NULL'},
+      ${entry_time ? `'${entry_time}'` : 'NULL'},
       ${exit_time ? `'${exit_time}'` : 'NULL'},
+      ${parking_duration ? `'${parking_duration}'` : 'NULL'},
       ${parkonic_trip_id ? `'${parkonic_trip_id}'` : 'NULL'},
       ${entry_image ? `'${entry_image}'` : 'NULL'},
       ${crop_image ? `'${crop_image}'` : 'NULL'},
       ${exit_image ? `'${exit_image}'` : 'NULL'},
-      ${video_1 ? `'${video_1}'` : 'NULL'},
-      ${video_2 ? `'${video_2}'` : 'NULL'},
       ${entry_image_path ? `'${entry_image_path}'` : 'NULL'},
       ${exit_clip_path ? `'${exit_clip_path}'` : 'NULL'},
+      ${entry_video_url ? `'${entry_video_url}'` : 'NULL'},
+      ${exit_video_url ? `'${exit_video_url}'` : 'NULL'},      
       '${type}'
     )
   `;
@@ -265,6 +286,7 @@ exports.updateTicket = async (id, data) => {
     confidence,
     entry_time,
     exit_time,
+    parking_duration,
     parkonic_trip_id,
     entry_image,
     crop_image,
@@ -286,6 +308,7 @@ exports.updateTicket = async (id, data) => {
   if (confidence !== undefined) updates.push(`confidence='${confidence}'`);
   if (entry_time) updates.push(`entry_time='${entry_time}'`);
   if (exit_time) updates.push(`exit_time='${exit_time}'`);
+  if (parking_duration) updates.push(`parking_duration='${exit_time}'`);
   if (parkonic_trip_id) updates.push(`parkonic_trip_id='${parkonic_trip_id}'`);
   if (entry_image) updates.push(`entry_image='${entry_image}'`);
   if (crop_image) updates.push(`crop_image='${crop_image}'`);
@@ -335,6 +358,7 @@ exports.getTicketsPaginateByCamera = (camera_id, perPage, offset) => {
       t.confidence,
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+      t.parking_duration,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
@@ -355,8 +379,8 @@ exports.getTicketsPaginateByCamera = (camera_id, perPage, offset) => {
       END AS exit_video_url,
 
       t.created_at,
-      t.updated_at
-      t.type,
+      t.updated_at,
+      t.type
 
     FROM cancelled t
     INNER JOIN cameras c ON c.id = t.camera_id
@@ -387,6 +411,7 @@ exports.getTicketsPaginateByLocation = (location_id, perPage, offset) => {
       t.confidence,
       DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
       DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+      t.parking_duration,
       t.parkonic_trip_id,
       t.entry_image_path,
       t.exit_clip_path,
@@ -407,8 +432,8 @@ exports.getTicketsPaginateByLocation = (location_id, perPage, offset) => {
       END AS exit_video_url,
 
       t.created_at,
-      t.updated_at
-      t.type,
+      t.updated_at,
+      t.type
     FROM cancelled t
     INNER JOIN cameras c ON c.id = t.camera_id
     INNER JOIN poles p ON p.id = c.pole_id
