@@ -178,7 +178,6 @@ router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), u
       const hours = Math.floor(diffMs / (1000 * 60 * 60));
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
       const parkingDuration = `${hours}h ${minutes}m`.toString();
-      console.log(exit_time,exists[0].entry_time,'===========',parkingDuration);
       const result = await ticketModel.updateTicket(exists[0].id, {
         exit_time: exit_time || null,
         parking_duration: parkingDuration || null,
