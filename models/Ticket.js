@@ -260,7 +260,9 @@ exports.checkTicketExists = async (data) => {
   } = data;
 
   const query = `
-    SELECT t.id
+    SELECT
+    t.id,
+    t.entry_time
     FROM tickets t
     INNER JOIN cameras c ON c.id = t.camera_id
     WHERE
