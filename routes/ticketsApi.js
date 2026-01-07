@@ -117,7 +117,6 @@ router.get(
 
       res.json({
         message: 'Ticket fetched successfully',
-        data: {
           ticket,
           pagination: {
             prev_ticket_id: ticket.prev_ticket_id,
@@ -125,7 +124,6 @@ router.get(
             rank: ticket.rank_position,
             total: ticket.total_tickets
           }
-        }
       });
     } catch (err) {
       logger.error('get ticket by id failed', { admin: req.user, error: err.message });
@@ -165,6 +163,32 @@ router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), u
     if (!camera_ip || !parkonic_token || !status || !access_point_id) {
       return res.status(400).json({ message: "camera_ip, parkonic_token, status and access_point_id are required" });
     }
+
+    const exists = await ticketModel.checkTicketExists({
+      camera_ip,
+      access_point_id,
+      parkonic_token,
+      number,
+      code,
+      spot_number
+    });
+
+    if (exists.length) {
+      const diffMs = new Date(exit_time) - new Date(exists[0].entry_time) ;
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const parkingDuration = `${hours}h ${minutes}m`.toString();
+      const result = await ticketModel.updateTicket(exists[0].id, {
+        exit_time: exit_time || null,
+        parking_duration: parkingDuration || null,
+      });
+
+      return res.status(409).json({
+        message: 'Ticket already exists, has been updated successfully',
+        ticket_id: exists[0].id
+      });
+    }
+
 
     const entry_image = req.files?.entry_image
         ? `uploads/tickets/${req.files.entry_image[0].filename}`

@@ -249,10 +249,36 @@ exports.getTicketById = (ticket_id) => {
   return mainQuery(query);
 };
 
+exports.checkTicketExists = async (data) => {
+   const {
+    camera_ip,
+    access_point_id,
+    parkonic_token,
+    number,
+    code,
+    spot_number,
+  } = data;
 
+  const query = `
+    SELECT t.id
+    FROM tickets t
+    INNER JOIN cameras c ON c.id = t.camera_id
+    WHERE
+      t.camera_ip = '${camera_ip}'
+      AND c.access_point_id = '${access_point_id}'
+      AND t.parkonic_token = '${parkonic_token}'
+      AND t.plate_number = '${number}'
+      AND t.plate_code = '${code}'
+      AND t.spot_number = '${spot_number}'
+      AND DATE(t.created_at) = CURDATE()
+    LIMIT 1;
+  `;
+  return mainQuery(query);
+};
 exports.createTicket = async (data) => {
   const {
     camera_id,
+    access_point_id,
     parkonic_token,
     number,
     code,
@@ -275,6 +301,7 @@ exports.createTicket = async (data) => {
   const query = `
     INSERT INTO tickets (
       camera_id,
+      access_point_id,
       parkonic_token,
       plate_number,
       plate_code,
@@ -294,6 +321,7 @@ exports.createTicket = async (data) => {
       exit_image
     ) VALUES (
       '${camera_id}',
+      '${access_point_id}',
       '${parkonic_token}',
       ${number ? `'${number}'` : 'NULL'},
       ${code ? `'${code}'` : 'NULL'},
