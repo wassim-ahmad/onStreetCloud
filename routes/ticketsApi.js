@@ -10,6 +10,7 @@ const cameraModel = require('../models/Camera'); // camera model
 const cancelledTicketsModel = require('../models/Cancelledticket');
 const Pagination = require('../utils/pagination');
 const logger = require('../utils/logger');
+const axios = require('axios');
 const { requirePermission } = require("../middleware/permission_middleware");
 
 const UPLOAD_DIR = path.join(__dirname, '../uploads/tickets');
@@ -78,24 +79,61 @@ router.get('/tickets', verifyToken, requirePermission("view_ticket"), async (req
 });
 
 // get ticket by id
-router.get('/ticket/:ticket_id', verifyToken, requirePermission("view_ticket"), async (req, res) => {
-  try {
-    const ticket_id = req.params.ticket_id;
-    logger.info("get ticket by id:", { admin: req.user, ticket_id });
+// router.get('/ticket/:ticket_id', verifyToken, requirePermission("view_ticket"), async (req, res) => {
+//   try {
+//     const ticket_id = req.params.ticket_id;
+//     logger.info("get ticket by id:", { admin: req.user, ticket_id });
 
-    const ticket = await ticketModel.getTicketById(ticket_id);
+//     const ticket = await ticketModel.getTicketById(ticket_id);
 
-    logger.success("get ticket by id successfully", { admin: req.user, ticket });
-    res.json({
-      message: 'Ticket fetched successfully',
-      data: ticket
-    });
-  } catch (err) {
-    logger.error('get ticket by id failed', { admin: req.user, error: err.message });
-    console.error(err);
-    res.status(500).json({ message: 'Database error', error: err });
+//     logger.success("get ticket by id successfully", { admin: req.user, ticket });
+//     res.json({
+//       message: 'Ticket fetched successfully',
+//       data: ticket
+//     });
+//   } catch (err) {
+//     logger.error('get ticket by id failed', { admin: req.user, error: err.message });
+//     console.error(err);
+//     res.status(500).json({ message: 'Database error', error: err });
+//   }
+// });
+
+router.get(
+  '/ticket/:ticket_id',
+  verifyToken,
+  requirePermission("view_ticket"),
+  async (req, res) => {
+    try {
+      const ticket_id = Number(req.params.ticket_id);
+      logger.info("get ticket by id:", { admin: req.user, ticket_id });
+
+      const rows = await ticketModel.getTicketById(ticket_id);
+
+      if (!rows.length) {
+        return res.status(404).json({ message: 'Ticket not found' });
+      }
+
+      const ticket = rows[0];
+
+      res.json({
+        message: 'Ticket fetched successfully',
+        data: {
+          ticket,
+          pagination: {
+            prev_ticket_id: ticket.prev_ticket_id,
+            next_ticket_id: ticket.next_ticket_id,
+            rank: ticket.rank_position,
+            total: ticket.total_tickets
+          }
+        }
+      });
+    } catch (err) {
+      logger.error('get ticket by id failed', { admin: req.user, error: err.message });
+      res.status(500).json({ message: 'Database error' });
+    }
   }
-});
+);
+
 
 // create new ticket
 router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), upload.fields([
@@ -443,23 +481,66 @@ router.post('/submit-ocr-ticket/:id', verifyToken, requirePermission("submit_tic
     if (!old_ticket[0]) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
-    delete old_ticket[0].id;
-    old_ticket[0].type = 'OCR';
 
-    const cancel_result = await cancelledTicketsModel.createTicket(old_ticket[0]);
+    const payload = {
+      token: old_ticket[0].token,
+      parkin_time: '2024-02-14 12:00:00',
+      plate_code: 'A',
+      plate_number: '12345',
+      emirates: 'Dubai',
+      conf: 100,
+      spot_number: 'A32',
+      pole_id: 1,// here is access pont id
+      images: [
+        'BASE64_IMAGE_1',
+        'BASE64_IMAGE_2'
+      ]
+    };
 
-    if (cancel_result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Ticket not submitted !!!' });
+    try {
+      const response = await axios.post(
+        'https://dev.parkonic.com/api/street-parking/v2/park-in',
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        }
+      );
+      // res.json({response:response.data.trip_id});
+      old_ticket[0].parkonic_trip_id = response.data.trip_id;
+      const updated_ticket = ticketModel.addTripId(ticket_id,response.data.trip_id);
+      console.log('API response:', response.data);
+    } catch (error) {
+      console.error(
+        'API error:',
+        error.response?.data || error.message
+      );
+      res.json({err:error.response?.data || error.message});
     }
 
-    const result = await ticketModel.deleteTicket(ticket_id);
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Ticket not found!' });
-    }
 
-    logger.success("OCR Ticket submitted successfully", { admin: req.user, result });
-    res.json({ message: 'Ticket submitted successfully', id: ticket_id, data: result });
+
+
+
+
+    // delete old_ticket[0].id;
+    // const cancel_result = await cancelledTicketsModel.createTicket(old_ticket[0]);
+
+    // if (cancel_result.affectedRows === 0) {
+    //   return res.status(404).json({ message: 'Ticket not submitted !!!' });
+    // }
+
+    // const result = await ticketModel.deleteTicket(ticket_id);
+
+    // if (result.affectedRows === 0) {
+    //   return res.status(404).json({ message: 'Ticket not found!' });
+    // }
+
+    // logger.success("OCR Ticket submitted successfully", { admin: req.user, result });
+    // res.json({ message: 'Ticket submitted successfully', id: ticket_id, data: result });
 
   } catch (err) {
     logger.error('OCR Ticket submitted failed', { admin: req.user, error: err.message });
