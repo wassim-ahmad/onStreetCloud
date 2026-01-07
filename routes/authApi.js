@@ -54,7 +54,14 @@ router.get('/profile', verifyToken, async (req, res) => {
     req.user.iat = moment.unix(req.user.iat).format("YYYY-MM-DD HH:mm:ss");
     req.user.exp = req.user.exp ? moment.unix(req.user.exp).format("YYYY-MM-DD HH:mm:ss") : 'infinity';
 
-    const permissions = await userModel.getUserPermissionsWithStatus(userId);
+    const permissionsArray = await userModel.getUserPermissionsWithStatus(userId);
+    const permissions = permissionsArray.reduce((acc, perm) => {
+      acc[perm.key] = {
+        status: String(perm.status), // "1" or "0"
+        key: perm.key
+      };
+      return acc;
+    }, {});
     
     logger.success("get user profile successfully", {admin: req.user});
     res.json({
@@ -64,6 +71,8 @@ router.get('/profile', verifyToken, async (req, res) => {
         permissions
       }
     });
+
+    
 
   } catch (err) {
     logger.error('user profile failed', { admin: req.user, error: err.message });

@@ -70,7 +70,6 @@ exports.getUserPermissionsWithStatus = async (userId) => {
   return result;
 };
 
-
 exports.getUsersTotalCount = async () => {
   const query = 'SELECT COUNT(*) AS totalCount FROM users WHERE deleted_at IS NULL';
   const result = await mainQuery(query);
