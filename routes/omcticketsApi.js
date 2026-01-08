@@ -8,9 +8,19 @@ const { verifyToken } = require('../config/auth');
 const omcticketModel = require('../models/Omcticket');
 const cameraModel = require('../models/Camera'); // camera model
 const cancelledTicketsModel = require('../models/Cancelledticket');
+const submittedTicketsModel = require('../models/Submittedticket');
 const Pagination = require('../utils/pagination');
 const logger = require('../utils/logger');
+const axios = require('axios');
 const { requirePermission } = require("../middleware/permission_middleware");
+var pool = require('../config/dbConnection');
+
+function imageToBase64(path) {
+  if (!path) {
+    return null;
+  }
+  return fs.readFileSync(path).toString('base64');
+}
 
 const UPLOAD_DIR = path.join(__dirname, '../uploads/omctickets');
 
@@ -428,7 +438,130 @@ router.post('/cancel-omc-ticket/:id', verifyToken, requirePermission("cancel_tic
 });
 
 
+// submit ticket
+router.post('/submit-omc-ticket/:id', verifyToken, requirePermission("submit_ticket"), async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    logger.info("submit omc ticket:", { admin: req.user, ticket_id: req.params.id });
+    const ticket_id = parseInt(req.params.id, 10); // convert to number
+    
+    if (!ticket_id) {
+      return res.status(400).json({ message: 'Ticket ID is required and must be a number' });
+    }
 
+    const old_ticket = await omcticketModel.getTicketById(ticket_id);
+    if (!old_ticket[0]) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    const entry = old_ticket[0].entry_image || "";
+    const exit = old_ticket[0].exit_image || "";
+    const entry_base64 = imageToBase64(entry);
+    const exit_base64 = imageToBase64(exit);
+
+    const images = [entry_base64, exit_base64];
+
+    // park in
+    const payload = {
+      token: old_ticket[0].parkonic_token,
+      parkin_time: old_ticket[0].entry_time,
+      plate_code: old_ticket[0].plate_code,
+      plate_number: old_ticket[0].plate_number,
+      emirates: old_ticket[0].plate_city,
+      conf: old_ticket[0].confidence,
+      spot_number: old_ticket[0].spot_number,
+      pole_id: old_ticket[0].access_point_id,// here is access pont id
+      images: images
+    };
+
+    try {
+      logger.info("try park-in OMC ticket:", { admin: req.user, ticket_id: req.params.id });
+      const response = await axios.post(
+        'https://dev.parkonic.com/api/street-parking/v2/park-in',
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        }
+      );
+      old_ticket[0].parkonic_trip_id = response.data.trip_id;
+      const updated_ticket = omcticketModel.addTripId(ticket_id,response.data.trip_id);
+      console.log('API response:', response.data);
+      logger.success("OMC ticket parked-in successfully", { admin: req.user,trip_id: response.data.trip_id });
+    } catch (error) {
+      logger.error('OMC Ticket park-in failed', { admin: req.user, error: error.response?.data || error.message });
+      console.error(
+        'API error:',
+        error.response?.data || error.message
+      );
+      res.json({err:error.response?.data || error.message});
+    }
+
+    // park out 
+    const payload_out = {
+      token: old_ticket[0].parkonic_token,
+      parkout_time: old_ticket[0].exit_time,
+      plate_code: old_ticket[0].plate_code,
+      plate_number: old_ticket[0].plate_number,
+      emirates: old_ticket[0].plate_city,
+      spot_number: old_ticket[0].spot_number,
+      pole_id: old_ticket[0].access_point_id,// here is access pont id
+      images: images
+    };
+    try {
+      logger.info("try park-out OMC ticket:", { admin: req.user, ticket_id: req.params.id });
+      const response_out = await axios.post(
+      'https://dev.parkonic.com/api/street-parking/v2/park-out',
+      payload_out,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 10000
+      }
+    );
+    // res.json({
+    //   status: response_out.status,
+    //   data: response_out.data
+    // });
+    logger.success("OMC Ticket parked-out successfully", { admin: req.user, response:response_out.data });
+    } catch (error) {
+      logger.error('OMC Ticket park-out failed', { admin: req.user, error: error.response?.data || error.message });
+      console.error(
+        'API out error:',
+        error.response?.data || error.message
+      );
+      res.json({err:error.response?.data || error.message});
+    }
+
+
+    delete old_ticket[0].id;
+    const cancel_result = await submittedTicketsModel.createTicket(old_ticket[0]);
+
+    if (cancel_result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Ticket not submitted !!!' });
+    }
+
+    const result = await omcticketModel.deleteTicket(ticket_id);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Ticket not found!' });
+    }
+
+    logger.success("OMC Ticket submitted successfully", { admin: req.user, result });
+    await conn.commit();
+    res.json({ message: 'Ticket submitted successfully', id: ticket_id, data: result });
+  } catch (err) {
+    await conn.rollback();
+    logger.error('OMC Ticket submitted failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  } finally {
+    conn.release();
+  }
+});
 
 
 

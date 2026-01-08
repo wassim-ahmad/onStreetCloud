@@ -14,7 +14,11 @@ const logger = require('../utils/logger');
 const axios = require('axios');
 const { requirePermission } = require("../middleware/permission_middleware");
 var pool = require('../config/dbConnection');
+
 function imageToBase64(path) {
+  if (!path) {
+    return null;
+  }
   return fs.readFileSync(path).toString('base64');
 }
 
@@ -512,8 +516,8 @@ router.post('/submit-ocr-ticket/:id', verifyToken, requirePermission("submit_tic
       return res.status(404).json({ message: 'Ticket not found' });
     }
 
-    const entry = old_ticket[0].entry_image;
-    const exit = old_ticket[0].exit_image;
+    const entry = old_ticket[0].entry_image || "";
+    const exit = old_ticket[0].exit_image || "";
     const entry_base64 = imageToBase64(entry);
     const exit_base64 = imageToBase64(exit);
 

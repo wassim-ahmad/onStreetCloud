@@ -288,6 +288,19 @@ exports.updateTicket = async (id, data) => {
   return mainQuery(query);
 };
 
+exports.addTripId = async (id, trip_id) => {
+  const updates = [];
+  if (trip_id) updates.push(`parkonic_trip_id='${trip_id}'`);
+  if (updates.length === 0) return null; // nothing to update
+
+  const query = `
+    UPDATE tickets
+    SET ${updates.join(', ')}
+    WHERE id = ${id}
+  `;
+
+  return mainQuery(query);
+};
 
 exports.deleteTicket = async (id) => {
   const query = `
