@@ -13,6 +13,10 @@ const logger = require('../utils/logger');
 const axios = require('axios');
 const { requirePermission } = require("../middleware/permission_middleware");
 
+function imageToBase64(path) {
+  return fs.readFileSync(path).toString('base64');
+}
+
 const UPLOAD_DIR = path.join(__dirname, '../uploads/tickets');
 
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -507,17 +511,19 @@ router.post('/submit-ocr-ticket/:id', verifyToken, requirePermission("submit_tic
     }
 
     const payload = {
-      token: old_ticket[0].token,
-      parkin_time: '2024-02-14 12:00:00',
-      plate_code: 'A',
-      plate_number: '12345',
-      emirates: 'Dubai',
-      conf: 100,
-      spot_number: 'A32',
-      pole_id: 1,// here is access pont id
+      token: old_ticket[0].parkonic_token,
+      parkin_time: old_ticket[0].entry_time,
+      plate_code: old_ticket[0].plate_code,
+      plate_number: old_ticket[0].plate_number,
+      emirates: old_ticket[0].plate_city,
+      conf: old_ticket[0].confidence,
+      spot_number: old_ticket[0].spot_number,
+      pole_id: old_ticket[0].access_point_id,// here is access pont id
       images: [
         'BASE64_IMAGE_1',
         'BASE64_IMAGE_2'
+
+        // here images file or liks only ?????????
       ]
     };
 
@@ -535,6 +541,42 @@ router.post('/submit-ocr-ticket/:id', verifyToken, requirePermission("submit_tic
       // res.json({response:response.data.trip_id});
       old_ticket[0].parkonic_trip_id = response.data.trip_id;
       const updated_ticket = ticketModel.addTripId(ticket_id,response.data.trip_id);
+console.log(imageToBase64(old_ticket[0].entry_image));
+
+      try {
+        const payload_out = {
+          token: old_ticket[0].parkonic_token,
+          parkout_time: old_ticket[0].exit_time,
+          plate_code: old_ticket[0].plate_code,
+          plate_number: old_ticket[0].plate_number,
+          emirates: old_ticket[0].plate_city,
+          spot_number: old_ticket[0].spot_number,
+          pole_id: old_ticket[0].access_point_id,// here is access pont id
+          images: [
+            'BASE64_IMAGE_1',
+            'BASE64_IMAGE_2'
+            // here images file or liks only ?????????
+          ]
+        };
+        const response_out = await axios.post(
+        'https://dev.parkonic.com/api/street-parking/v2/park-out',
+        payload_out,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          timeout: 10000
+        }
+      );
+      res.json({response:response_out});
+      } catch (error) {
+        console.error(
+          'API out error:',
+          error.response?.data || error.message
+        );
+        res.json({err:error.response?.data || error.message});
+      }
+
       console.log('API response:', response.data);
     } catch (error) {
       console.error(

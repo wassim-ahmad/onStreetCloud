@@ -56,7 +56,7 @@ router.get('/profile', verifyToken, async (req, res) => {
 
     const permissionsArray = await userModel.getUserPermissionsWithStatus(userId);
     const permissions = permissionsArray.reduce((acc, perm) => {
-      acc[perm.key] = {
+      acc[perm.name] = {
         status: String(perm.status), // "1" or "0"
         key: perm.key
       };

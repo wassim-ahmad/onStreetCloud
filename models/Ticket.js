@@ -280,7 +280,6 @@ exports.checkTicketExists = async (data) => {
 exports.createTicket = async (data) => {
   const {
     camera_id,
-    access_point_id,
     parkonic_token,
     number,
     code,
@@ -303,7 +302,6 @@ exports.createTicket = async (data) => {
   const query = `
     INSERT INTO tickets (
       camera_id,
-      access_point_id,
       parkonic_token,
       plate_number,
       plate_code,
@@ -323,7 +321,6 @@ exports.createTicket = async (data) => {
       exit_image
     ) VALUES (
       '${camera_id}',
-      '${access_point_id}',
       '${parkonic_token}',
       ${number ? `'${number}'` : 'NULL'},
       ${code ? `'${code}'` : 'NULL'},
