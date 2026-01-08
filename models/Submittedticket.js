@@ -194,10 +194,15 @@ exports.getTicketById = (ticket_id) => {
 exports.createTicket = async (data) => {
   const {
     camera_id,
+    parkonic_token,
     spot_number,
+    camera_ip,
     plate_number,
     plate_code,
     plate_city,
+    status,
+    zone_name,
+    zone_region,
     confidence,
     entry_time,
     exit_time,
@@ -206,58 +211,59 @@ exports.createTicket = async (data) => {
     entry_image,
     crop_image,
     exit_image,
-    video_1,
-    video_2,
     entry_image_path,
-    exit_clip_path
+    exit_clip_path,
+    entry_video_url,
+    exit_video_url
   } = data;
 
   const query = `
     INSERT INTO submitted (
       camera_id,
+      parkonic_token,
       spot_number,
+      camera_ip,
       plate_number,
       plate_code,
       plate_city,
+      status,
+      zone_name,
+      zone_region,
       confidence,
       entry_time,
       exit_time,
+      parking_duration,
       parkonic_trip_id,
       entry_image,
       crop_image,
       exit_image,
-      
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.video_1
-      END AS video_1,
-
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.video_2
-      END AS video_2,
-
       entry_image_path,
-      exit_clip_path
+      exit_clip_path,
+      entry_video_url,
+      exit_video_url
     ) VALUES (
       '${camera_id}',
-      '${spot_number}',
-      '${plate_number}',
-      '${plate_code}',
-      '${plate_city}',
-      '${confidence}',
-      '${entry_time}',
+      ${parkonic_token ? `'${parkonic_token}'` : 'NULL'},
+      ${spot_number ? `'${spot_number}'` : 'NULL'},
+      ${camera_ip ? `'${camera_ip}'` : 'NULL'},
+      ${plate_number ? `'${plate_number}'` : 'NULL'},
+      ${plate_code ? `'${plate_code}'` : 'NULL'},
+      ${plate_city ? `'${plate_city}'` : 'NULL'},
+      ${status ? `'${status}'` : 'NULL'},
+      ${zone_name ? `'${zone_name}'` : 'NULL'},
+      ${zone_region ? `'${zone_region}'` : 'NULL'},
+      ${confidence ? `'${confidence}'` : 'NULL'},
+      ${entry_time ? `'${entry_time}'` : 'NULL'},
       ${exit_time ? `'${exit_time}'` : 'NULL'},
+      ${parking_duration ? `'${parking_duration}'` : 'NULL'},
       ${parkonic_trip_id ? `'${parkonic_trip_id}'` : 'NULL'},
       ${entry_image ? `'${entry_image}'` : 'NULL'},
       ${crop_image ? `'${crop_image}'` : 'NULL'},
       ${exit_image ? `'${exit_image}'` : 'NULL'},
-      ${video_1 ? `'${video_1}'` : 'NULL'},
-      ${video_2 ? `'${video_2}'` : 'NULL'},
       ${entry_image_path ? `'${entry_image_path}'` : 'NULL'},
-      ${exit_clip_path ? `'${exit_clip_path}'` : 'NULL'}
+      ${exit_clip_path ? `'${exit_clip_path}'` : 'NULL'},
+      ${entry_video_url ? `'${entry_video_url}'` : 'NULL'},
+      ${exit_video_url ? `'${exit_video_url}'` : 'NULL'}
     )
   `;
 
