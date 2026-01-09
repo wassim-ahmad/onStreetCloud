@@ -60,6 +60,7 @@ router.get(
 
       const settings = rows[0];
       const ssettings = JSON.parse(settings.value);
+      logger.success("Settings fetched successfully", { admin: req.user });
 
       res.json(ssettings);
     } catch (err) {
@@ -83,6 +84,7 @@ router.put(
 
       await settingsModel.updateIPs(ips);
 
+      logger.success("setting updated successfully", { admin: req.user });
       res.json({ message: 'Ticket IPs updated successfully', ips });
     } catch (err) {
       logger.error('update ticket IPs failed', { admin: req.user, error: err.message });
@@ -105,7 +107,7 @@ router.put(
       }
 
       await settingsModel.updateCameraIssueTime(time);
-
+      logger.success("Settings updated successfully", { admin: req.user });
       res.json({ message: 'time updated successfully', time });
     } catch (err) {
       logger.error('update time failed', { admin: req.user, error: err.message });

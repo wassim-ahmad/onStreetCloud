@@ -402,14 +402,44 @@ router.get(
 );
 
 // cancel ticket
-router.post('/cancel-omc-ticket/:id', verifyToken, requirePermission("cancel_ticket"), allowedTicketIPs, async (req, res) => {
+router.post('/cancel-omc-ticket/:id', upload.none(), verifyToken, requirePermission("cancel_ticket"), allowedTicketIPs, async (req, res) => {
   try {
-    logger.info("cancel omc ticket:", { admin: req.user, ticket_id: req.params.id });
+    logger.info("cancel omc ticket:", { admin: req.user, ticket_id: req.params.id,body: req.body });
     const ticket_id = parseInt(req.params.id, 10); // convert to number
     
     if (!ticket_id) {
       return res.status(400).json({ message: 'Ticket ID is required and must be a number' });
     }
+
+    // update section
+    const {
+      number,
+      code,
+      city,
+      confidence,
+      exit_time,
+      entry_time,
+    } = req.body;
+
+    const diffMs = new Date(exit_time) - new Date(entry_time) ;
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    const parkingDuration = `${hours}h ${minutes}m`.toString();
+
+    const updateTicketData = await omcticketModel.updateTicket(ticket_id, {
+      number: number || null,
+      code: code || null,
+      city: city || null,
+      confidence: confidence || null,
+      exit_time: exit_time || null,
+      parking_duration: parkingDuration || null,
+    });
+  
+    if (!updateTicketData) {
+      return res.status(400).json({ message: 'Nothing to update' });
+    }
+    // end update ticket
 
     const old_ticket = await omcticketModel.getTicketById(ticket_id);
     if (!old_ticket[0]) {
@@ -442,27 +472,59 @@ router.post('/cancel-omc-ticket/:id', verifyToken, requirePermission("cancel_tic
 
 
 // submit ticket
-router.post('/submit-omc-ticket/:id', verifyToken, requirePermission("submit_ticket"), allowedTicketIPs, async (req, res) => {
+router.post('/submit-omc-ticket/:id', upload.none(), verifyToken, requirePermission("submit_ticket"), allowedTicketIPs, async (req, res) => {
   const conn = await pool.getConnection();
   try {
-    logger.info("submit omc ticket:", { admin: req.user, ticket_id: req.params.id });
+    logger.info("submit omc ticket:", { admin: req.user, ticket_id: req.params.id,body: req.body });
     const ticket_id = parseInt(req.params.id, 10); // convert to number
     
     if (!ticket_id) {
       return res.status(400).json({ message: 'Ticket ID is required and must be a number' });
     }
 
+    // update section
+        const {
+          number,
+          code,
+          city,
+          confidence,
+          exit_time,
+          entry_time,
+        } = req.body;
+    
+        const diffMs = new Date(exit_time) - new Date(entry_time) ;
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+        const parkingDuration = `${hours}h ${minutes}m`.toString();
+    
+        const updateTicketData = await omcticketModel.updateTicket(ticket_id, {
+          number: number || null,
+          code: code || null,
+          city: city || null,
+          confidence: confidence || null,
+          exit_time: exit_time || null,
+          parking_duration: parkingDuration || null,
+        });
+    
+        if (!updateTicketData) {
+          return res.status(400).json({ message: 'Nothing to update' });
+        }
+        // end update ticket
+
     const old_ticket = await omcticketModel.getTicketById(ticket_id);
     if (!old_ticket[0]) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
 
+    const crop = old_ticket[0].crop_image || "";
     const entry = old_ticket[0].entry_image || "";
     const exit = old_ticket[0].exit_image || "";
+    const crop_base64 = imageToBase64(crop);
     const entry_base64 = imageToBase64(entry);
     const exit_base64 = imageToBase64(exit);
 
-    const images = [entry_base64, exit_base64];
+    const images = [crop_base64, entry_base64, exit_base64];
 
     // park in
     const payload = {
