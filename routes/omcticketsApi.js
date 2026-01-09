@@ -199,52 +199,52 @@ router.post('/create-omc-ticket', verifyToken, requirePermission("create_omctick
 });
 
 // update ticket
-router.put('/update-omc-ticket/:id', upload.none(), verifyToken, requirePermission("edit_omcticket"), allowedTicketIPs, async (req, res) => {
-  try {
-    logger.info("update omc ticket:", { admin: req.user, body: req.body });
-    const id = req.params.id;
+// router.put('/update-omc-ticket/:id', upload.none(), verifyToken, requirePermission("edit_omcticket"), allowedTicketIPs, async (req, res) => {
+//   try {
+//     logger.info("update omc ticket:", { admin: req.user, body: req.body });
+//     const id = req.params.id;
 
-    const {
-      number,
-      code,
-      city,
-      confidence,
-      exit_time,
-      entry_time,
-    } = req.body;
+//     const {
+//       number,
+//       code,
+//       city,
+//       confidence,
+//       exit_time,
+//       entry_time,
+//     } = req.body;
 
-    const diffMs = new Date(exit_time) - new Date(entry_time) ;
+//     const diffMs = new Date(exit_time) - new Date(entry_time) ;
 
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+//     const hours = Math.floor(diffMs / (1000 * 60 * 60));
+//     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
-    const parkingDuration = `${hours}h ${minutes}m`.toString();
+//     const parkingDuration = `${hours}h ${minutes}m`.toString();
 
-    const result = await omcticketModel.updateTicket(id, {
-      number: number || null,
-      code: code || null,
-      city: city || null,
-      confidence: confidence || null,
-      exit_time: exit_time || null,
-      parking_duration: parkingDuration || null,
-    });
+//     const result = await omcticketModel.updateTicket(id, {
+//       number: number || null,
+//       code: code || null,
+//       city: city || null,
+//       confidence: confidence || null,
+//       exit_time: exit_time || null,
+//       parking_duration: parkingDuration || null,
+//     });
 
-    if (!result) {
-      return res.status(400).json({ message: 'Nothing to update' });
-    }
+//     if (!result) {
+//       return res.status(400).json({ message: 'Nothing to update' });
+//     }
 
-    logger.success("update omc ticket successfully", { admin: req.user, result });
-    res.json({
-      message: 'Ticket updated successfully',
-      data: result
-    });
+//     logger.success("update omc ticket successfully", { admin: req.user, result });
+//     res.json({
+//       message: 'Ticket updated successfully',
+//       data: result
+//     });
 
-  } catch (err) {
-    logger.error('update omc ticket failed', { admin: req.user, error: err.message });
-    console.error(err);
-    res.status(500).json({ message: 'Database error', error: err.message });
-  }
-});
+//   } catch (err) {
+//     logger.error('update omc ticket failed', { admin: req.user, error: err.message });
+//     console.error(err);
+//     res.status(500).json({ message: 'Database error', error: err.message });
+//   }
+// });
 
 // delete ticket
 router.delete('/delete-omc-ticket/:id', verifyToken, requirePermission("delete_omcticket"), allowedTicketIPs, async (req, res) => {
