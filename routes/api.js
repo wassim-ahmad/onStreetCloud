@@ -14,6 +14,8 @@ const TicketsRoutes = require("./ticketsApi.js");
 const OmcticketsRoutes = require("./omcticketsApi.js");
 const SubmittedticketsRoutes = require("./submittedApi.js");
 const CancelledticketsRoutes = require("./cancelledApi.js");
+const SettingsRoutes = require("./settingsApi.js");
+
 
 router.use(authRoutes);
 router.use(locationsRoutes);
@@ -29,5 +31,6 @@ router.use(TicketsRoutes);
 router.use(OmcticketsRoutes);
 router.use(SubmittedticketsRoutes);
 router.use(CancelledticketsRoutes);
+router.use(SettingsRoutes);
 
 module.exports = router;

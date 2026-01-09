@@ -167,7 +167,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `plate_number` VARCHAR(20) NOT NULL, \
     `plate_code` VARCHAR(10) NULL, \
     `plate_city` VARCHAR(50) NULL, \
-    `status` INT NULL, \
+    `status` VARCHAR(50) NULL, \
     `zone_name` VARCHAR(255) NULL, \
     `zone_region` VARCHAR(255) NULL, \
     `confidence` INT NULL, \
@@ -201,7 +201,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `plate_number` VARCHAR(20) NOT NULL, \
     `plate_code` VARCHAR(10) NULL, \
     `plate_city` VARCHAR(50) NULL, \
-    `status` INT NULL, \
+    `status` VARCHAR(50) NULL, \
     `zone_name` VARCHAR(255) NULL, \
     `zone_region` VARCHAR(255) NULL, \
     `confidence` INT NULL, \
@@ -235,7 +235,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `plate_number` VARCHAR(20) NOT NULL, \
     `plate_code` VARCHAR(10) NULL, \
     `plate_city` VARCHAR(50) NULL, \
-    `status` INT NULL, \
+    `status` VARCHAR(50) NULL, \
     `zone_name` VARCHAR(255) NULL, \
     `zone_region` VARCHAR(255) NULL, \
     `confidence` INT NULL, \
@@ -269,7 +269,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `plate_number` VARCHAR(20) NOT NULL, \
     `plate_code` VARCHAR(10) NULL, \
     `plate_city` VARCHAR(50) NULL, \
-    `status` INT NULL, \
+    `status` VARCHAR(50) NULL, \
     `zone_name` VARCHAR(255) NULL, \
     `zone_region` VARCHAR(255) NULL, \
     `confidence` INT NULL, \
@@ -294,6 +294,17 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
         ON DELETE CASCADE \
 )');
 
+connection.query('\
+    CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionDetails.settings_table + '` ( \
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT, \
+    `name` VARCHAR(100) NOT NULL, \
+    `value` JSON NULL, \
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
+    PRIMARY KEY (`id`), \
+    UNIQUE INDEX `name_UNIQUE` (name ASC) \
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; \
+');
 
 
 connection.query('USE ' + connectionDetails.database);
@@ -388,6 +399,9 @@ connection.query(insertQuery,['Delete Cancelled Ticket', 'delete_cancelled', 'us
 
 connection.query(insertQuery,['Restore User', 'restore_user', 'users can restore user']);
 
+connection.query(insertQuery,['Restore User', 'view_setting', 'users can view settings']);
+connection.query(insertQuery,['Restore User', 'edit_setting', 'users can edit settings']);
+
 var insertQuery = "INSERT INTO user_permissions (user_id, permission_id) VALUES (?,?)";
 connection.query(insertQuery,[1, 1]);
 connection.query(insertQuery,[1, 2]);
@@ -435,6 +449,13 @@ connection.query(insertQuery,[1, 43]);
 connection.query(insertQuery,[1, 44]);
 connection.query(insertQuery,[1, 45]);
 connection.query(insertQuery,[1, 46]);
+connection.query(insertQuery,[1, 47]);
+connection.query(insertQuery,[1, 48]);
+
+var insertQuery = "INSERT INTO settings (`name`, `value`) VALUES (?,?)";
+connection.query(insertQuery,['ticket_allowed_ips','["192.168.1.10","10.0.0.5"]']);
+connection.query(insertQuery,['camera_issue_time', '["5 09:30"]']);
+
 
 console.log('Success: Database Created!')
 

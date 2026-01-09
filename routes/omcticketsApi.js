@@ -14,6 +14,7 @@ const logger = require('../utils/logger');
 const axios = require('axios');
 const { requirePermission } = require("../middleware/permission_middleware");
 var pool = require('../config/dbConnection');
+const allowedTicketIPs = require("../middleware/allowTicketIps");
 
 function imageToBase64(path) {
   if (!path) {
@@ -39,7 +40,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // get all tickets without paginate
-router.get('/omc-tickets-all', verifyToken, requirePermission("view_omcticket"), async (req, res) => {
+router.get('/omc-tickets-all', verifyToken, requirePermission("view_omcticket"), allowedTicketIPs, async (req, res) => {
   try {
     logger.info("get all omc tickets without paginate.", { admin: req.user });
 
@@ -58,7 +59,7 @@ router.get('/omc-tickets-all', verifyToken, requirePermission("view_omcticket"),
 });
 
 // get tickets paginate with total count
-router.get('/omc-tickets', verifyToken, requirePermission("view_omcticket"), async (req, res) => {
+router.get('/omc-tickets', verifyToken, requirePermission("view_omcticket"), allowedTicketIPs, async (req, res) => {
   try {
     logger.info("get omc tickets:", { admin: req.user });
 
@@ -88,7 +89,7 @@ router.get('/omc-tickets', verifyToken, requirePermission("view_omcticket"), asy
 });
 
 // get ticket by id
-router.get('/omc-ticket/:ticket_id', verifyToken, requirePermission("view_omcticket"), async (req, res) => {
+router.get('/omc-ticket/:ticket_id', verifyToken, requirePermission("view_omcticket"), allowedTicketIPs, async (req, res) => {
   try {
     const ticket_id = req.params.ticket_id;
     logger.info("get omc ticket by id:", { admin: req.user, ticket_id });
@@ -108,7 +109,7 @@ router.get('/omc-ticket/:ticket_id', verifyToken, requirePermission("view_omctic
 });
 
 // create new ticket
-router.post('/create-omc-ticket', verifyToken, requirePermission("create_omcticket"), upload.fields([
+router.post('/create-omc-ticket', verifyToken, requirePermission("create_omcticket"), allowedTicketIPs, upload.fields([
     { name: 'entry_image', maxCount: 1 },
     { name: 'crop_image', maxCount: 1 },
     { name: 'exit_image', maxCount: 1 }
@@ -198,7 +199,7 @@ router.post('/create-omc-ticket', verifyToken, requirePermission("create_omctick
 });
 
 // update ticket
-router.put('/update-omc-ticket/:id', upload.none(), verifyToken, requirePermission("edit_omcticket"), async (req, res) => {
+router.put('/update-omc-ticket/:id', upload.none(), verifyToken, requirePermission("edit_omcticket"), allowedTicketIPs, async (req, res) => {
   try {
     logger.info("update omc ticket:", { admin: req.user, body: req.body });
     const id = req.params.id;
@@ -246,7 +247,7 @@ router.put('/update-omc-ticket/:id', upload.none(), verifyToken, requirePermissi
 });
 
 // delete ticket
-router.delete('/delete-omc-ticket/:id', verifyToken, requirePermission("delete_omcticket"), async (req, res) => {
+router.delete('/delete-omc-ticket/:id', verifyToken, requirePermission("delete_omcticket"), allowedTicketIPs, async (req, res) => {
   try {
     logger.info("delete omc ticket:", { admin: req.user, ticket_id: req.params.id });
     const ticket_id = parseInt(req.params.id, 10); // convert to number
@@ -275,6 +276,7 @@ router.get(
   '/omc-tickets/by-camera/:camera_id',
   verifyToken,
   requirePermission("view_omcticket"),
+  allowedTicketIPs,
   async (req, res) => {
     try {
       logger.info("get omc tickets by camera:", {
@@ -338,6 +340,7 @@ router.get(
   '/omc-tickets/by-location/:location_id',
   verifyToken,
   requirePermission("view_omcticket"),
+  allowedTicketIPs,
   async (req, res) => {
     try {
       const location_id = Number(req.params.location_id);
@@ -399,7 +402,7 @@ router.get(
 );
 
 // cancel ticket
-router.post('/cancel-omc-ticket/:id', verifyToken, requirePermission("cancel_ticket"), async (req, res) => {
+router.post('/cancel-omc-ticket/:id', verifyToken, requirePermission("cancel_ticket"), allowedTicketIPs, async (req, res) => {
   try {
     logger.info("cancel omc ticket:", { admin: req.user, ticket_id: req.params.id });
     const ticket_id = parseInt(req.params.id, 10); // convert to number
@@ -439,7 +442,7 @@ router.post('/cancel-omc-ticket/:id', verifyToken, requirePermission("cancel_tic
 
 
 // submit ticket
-router.post('/submit-omc-ticket/:id', verifyToken, requirePermission("submit_ticket"), async (req, res) => {
+router.post('/submit-omc-ticket/:id', verifyToken, requirePermission("submit_ticket"), allowedTicketIPs, async (req, res) => {
   const conn = await pool.getConnection();
   try {
     logger.info("submit omc ticket:", { admin: req.user, ticket_id: req.params.id });

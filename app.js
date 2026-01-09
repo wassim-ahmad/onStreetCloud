@@ -18,6 +18,8 @@ app.use(cors({
     morgan(':method :url :status :res[content-length] - :response-time ms - :remote-addr')
   );
 
+  app.set('trust proxy', true);
+
 const accessLogStream = fs.createWriteStream(
   path.join(__dirname, 'access.log'),
   { flags: 'a' } // append mode
