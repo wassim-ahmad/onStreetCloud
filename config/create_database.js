@@ -309,25 +309,25 @@ connection.query('\
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; \
 ');
 
-connection.query('\
-    CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionDetails.camera_issue_table + '` ( \
-        `id` INT UNSIGNED NOT NULL AUTO_INCREMENT, \
-        `camera_id` INT UNSIGNED NOT NULL, \
-        `pole_id` INT UNSIGNED NULL, \
-        `name` VARCHAR(100) NOT NULL, \
-        `value` JSON NULL, \
-        `last_report` TIMESTAMP NULL, \
-        `next_report` TIMESTAMP NULL, \
-        `duration` INT UNSIGNED NULL COMMENT "Difference in seconds between last_report and next_report", \
-        `status` BOOLEAN NOT NULL DEFAULT 0, \
-        `reason` TEXT NULL, \
-        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
-        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
-        PRIMARY KEY (`id`), \
-        UNIQUE INDEX `name_UNIQUE` (`name` ASC), \
-        CONSTRAINT `fk_camera` FOREIGN KEY (`camera_id`) REFERENCES `' + connectionDetails.database + '`.cameras(`id`) ON DELETE CASCADE ON UPDATE CASCADE \
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; \
-');
+// connection.query('\
+//     CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionDetails.camera_issue_table + '` ( \
+//         `id` INT UNSIGNED NOT NULL AUTO_INCREMENT, \
+//         `camera_id` INT UNSIGNED NOT NULL, \
+//         `pole_id` INT UNSIGNED NULL, \
+//         `name` VARCHAR(100) NOT NULL, \
+//         `value` JSON NULL, \
+//         `last_report` TIMESTAMP NULL, \
+//         `next_report` TIMESTAMP NULL, \
+//         `duration` INT UNSIGNED NULL COMMENT "Difference in seconds between last_report and next_report", \
+//         `status` BOOLEAN NOT NULL DEFAULT 0, \
+//         `reason` TEXT NULL, \
+//         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
+//         `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
+//         PRIMARY KEY (`id`), \
+//         UNIQUE INDEX `name_UNIQUE` (`name` ASC), \
+//         CONSTRAINT `fk_camera` FOREIGN KEY (`camera_id`) REFERENCES `' + connectionDetails.database + '`.cameras(`id`) ON DELETE CASCADE ON UPDATE CASCADE \
+//     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; \
+// ');
 
 
 
