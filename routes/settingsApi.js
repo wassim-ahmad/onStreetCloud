@@ -53,6 +53,7 @@ router.get(
       logger.info("get setting by name:", { admin: req.user, name });
 
       const rows = await settingsModel.getSetting(name);
+      console.log(rows);
 
       if (!rows.length) {
         return res.status(404).json({ message: 'Settings not found' });
