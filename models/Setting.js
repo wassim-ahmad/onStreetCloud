@@ -11,7 +11,8 @@ exports.getSetting = async (name) => {
     SELECT 
       s.id,
       s.name,
-      s.value
+      s.value,
+      JSON_VALID(value)
       FROM settings s
       WHERE s.name = '${name}'
       LIMIT 1;
