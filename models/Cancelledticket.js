@@ -221,6 +221,8 @@ exports.createTicket = async (data) => {
     type
   } = data;
 
+  const confidenceInt = confidence !== undefined && confidence !== null ? Number(confidence) : 'NULL';
+
   const query = `
     INSERT INTO cancelled (
       camera_id,
@@ -257,7 +259,7 @@ exports.createTicket = async (data) => {
       ${status ? `'${status}'` : 'NULL'},
       ${zone_name ? `'${zone_name}'` : 'NULL'},
       ${zone_region ? `'${zone_region}'` : 'NULL'},
-      ${confidence ? `'${confidence}'` : 'NULL'},
+      '${confidenceInt}',
       ${entry_time ? `'${entry_time}'` : 'NULL'},
       ${exit_time ? `'${exit_time}'` : 'NULL'},
       ${parking_duration ? `'${parking_duration}'` : 'NULL'},

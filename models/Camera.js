@@ -54,14 +54,16 @@ exports.getCameras = () => {
       c.pole_id,
       c.number_of_parking,
       c.access_point_id,
+      c.zone_name,
+      c.last_report,
       p.code AS pole_code,
       p.router_ip AS pole_router_ip,
       p.router_vpn_ip AS pole_router_vpn_ip,
       p.lat AS pole_lat,
       p.lng AS pole_lng,
       p.zone_id AS pole_zone_id,
-      z.name AS zone_name,
-      l.name AS location_name,
+      z.name AS zone,
+      l.name AS location,
       DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
       DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
     FROM cameras c
@@ -82,13 +84,15 @@ exports.getCamerasPaginate = (perPage, offset) => {
       c.pole_id,
       c.number_of_parking,
       c.access_point_id,
+      c.zone_name,
+      c.last_report,
       p.code AS pole_code,
       p.router_ip AS pole_router_ip,
       p.router_vpn_ip AS pole_router_vpn_ip,
       p.lat AS pole_lat,
       p.lng AS pole_lng,
       p.zone_id AS pole_zone_id,
-      z.name AS zone_name,
+      z.name AS zone,
       DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
       DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
     FROM cameras c
@@ -110,6 +114,8 @@ exports.getCameraById = (camera_id) => {
       c.camera_ip,
       c.number_of_parking,
       c.access_point_id,
+      c.zone_name,
+      c.last_report,
       c.pole_id,
       p.code AS pole_code,
       p.router_ip AS pole_router_ip,
@@ -117,7 +123,7 @@ exports.getCameraById = (camera_id) => {
       p.lat AS pole_lat,
       p.lng AS pole_lng,
       p.zone_id AS pole_zone_id,
-      z.name AS zone_name,
+      z.name AS zone,
       DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
       DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
     FROM cameras c
@@ -136,6 +142,8 @@ exports.getCameraByIpAndAccessPointId = (access_point_id,camera_ip) => {
       c.camera_ip,
       c.number_of_parking,
       c.access_point_id,
+      c.zone_name,
+      c.last_report,
       c.pole_id,
       p.code AS pole_code,
       p.router_ip AS pole_router_ip,
@@ -143,7 +151,7 @@ exports.getCameraByIpAndAccessPointId = (access_point_id,camera_ip) => {
       p.lat AS pole_lat,
       p.lng AS pole_lng,
       p.zone_id AS pole_zone_id,
-      z.name AS zone_name,
+      z.name AS zone,
       DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
       DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
     FROM cameras c
@@ -164,6 +172,8 @@ exports.getDeletedCameraById = (camera_id) => {
       c.camera_ip,
       c.number_of_parking,
       c.access_point_id,
+      c.zone_name,
+      c.last_report,
       c.pole_id,
       p.code AS pole_code,
       p.router_ip AS pole_router_ip,
@@ -171,7 +181,7 @@ exports.getDeletedCameraById = (camera_id) => {
       p.lat AS pole_lat,
       p.lng AS pole_lng,
       p.zone_id AS pole_zone_id,
-      z.name AS zone_name,
+      z.name AS zone,
       DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
       DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
     FROM cameras c
@@ -256,6 +266,8 @@ exports.getCamerasByPole = (pole_id, perPage = 9, offset = 0) => {
       c.id,
       c.camera_ip,
       c.access_point_id,
+      c.zone_name,
+      c.last_report,
       c.pole_id,
       c.number_of_parking,
       p.code AS pole_code,
@@ -264,7 +276,7 @@ exports.getCamerasByPole = (pole_id, perPage = 9, offset = 0) => {
       p.lat AS pole_lat,
       p.lng AS pole_lng,
       p.zone_id AS pole_zone_id,
-      z.name AS zone_name,
+      z.name AS zone,
       DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
       DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
     FROM cameras c
@@ -284,6 +296,8 @@ exports.getCamerasByPoleCode = (pole_code, perPage = 9, offset = 0) => {
       c.id,
       c.camera_ip,
       c.access_point_id,
+      c.zone_name,
+      c.last_report,
       c.pole_id,
       c.number_of_parking,
       p.code AS pole_code,
@@ -292,7 +306,7 @@ exports.getCamerasByPoleCode = (pole_code, perPage = 9, offset = 0) => {
       p.lat AS pole_lat,
       p.lng AS pole_lng,
       p.zone_id AS pole_zone_id,
-      z.name AS zone_name,
+      z.name AS zone,
       DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
       DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
     FROM cameras c
@@ -315,6 +329,8 @@ exports.getCamerasByZone = (zoneId, perPage = 9, offset = 0) => {
       c.camera_ip,
       c.number_of_parking,
       c.access_point_id,
+      c.zone_name,
+      c.last_report,
       c.pole_id,
       p.code AS pole_code,
       p.router_ip AS pole_router_ip,
@@ -322,7 +338,7 @@ exports.getCamerasByZone = (zoneId, perPage = 9, offset = 0) => {
       p.lat AS pole_lat,
       p.lng AS pole_lng,
       p.zone_id AS pole_zone_id,
-      z.name AS zone_name,
+      z.name AS zone,
       DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
       DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
     FROM cameras c

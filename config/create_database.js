@@ -84,6 +84,8 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `camera_ip` VARCHAR(50) NOT NULL, \
     `access_point_id` VARCHAR(50) NOT NULL, \
     `number_of_parking` INT UNSIGNED NULL, \
+    `zone_name` VARCHAR(255) NULL, \
+    `last_report` TIMESTAMP NULL, \
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, \
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
     `deleted_at` TIMESTAMP NULL DEFAULT NULL, \

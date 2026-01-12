@@ -488,9 +488,9 @@ router.post('/cancel-ocr-ticket/:id', upload.none(), verifyToken, requirePermiss
     const parkingDuration = `${hours}h ${minutes}m`.toString();
 
     const updateTicketData = await ticketModel.updateTicket(ticket_id, {
-      number: number || null,
-      code: code || null,
-      city: city || null,
+      plate_number: number || null,
+      plate_code: code || null,
+      plate_city: city || null,
       confidence: confidence || null,
       exit_time: exit_time || null,
       parking_duration: parkingDuration || null,
@@ -531,162 +531,274 @@ router.post('/cancel-ocr-ticket/:id', upload.none(), verifyToken, requirePermiss
 });
 
 // submit ticket
+// router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermission("submit_ticket"), async (req, res) => {
+//   const conn = await pool.getConnection();
+//   try {
+
+//     logger.info("submit ocr ticket:", { admin: req.user, ticket_id: req.params.id ,body: req.body});
+//     const ticket_id = parseInt(req.params.id, 10); // convert to number
+    
+//     if (!ticket_id) {
+//       return res.status(400).json({ message: 'Ticket ID is required and must be a number' });
+//     }
+//     // update section
+//     const {
+//       number,
+//       code,
+//       city,
+//       confidence,
+//       exit_time,
+//       entry_time,
+//     } = req.body;
+
+//     const diffMs = new Date(exit_time) - new Date(entry_time) ;
+//     const hours = Math.floor(diffMs / (1000 * 60 * 60));
+//     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+//     const parkingDuration = `${hours}h ${minutes}m`.toString();
+
+//     const updateTicketData = await ticketModel.updateTicket(ticket_id, {
+//       plate_number: number || null,
+//       plate_code: code || null,
+//       plate_city: city || null,
+//       confidence: confidence || null,
+//       exit_time: exit_time || null,
+//       parking_duration: parkingDuration || null,
+//     });
+
+//     if (!updateTicketData) {
+//       return res.status(400).json({ message: 'Nothing to update' });
+//     }
+//     // end update ticket
+
+
+//     const old_ticket = await ticketModel.getTicketById(ticket_id);
+//     if (!old_ticket[0]) {
+//       return res.status(404).json({ message: 'Ticket not found' });
+//     }
+
+//     const crop = old_ticket[0].crop_image || "";
+//     const entry = old_ticket[0].entry_image || "";
+//     const exit = old_ticket[0].exit_image || "";
+//     const crop_base64 = imageToBase64(crop);
+//     const entry_base64 = imageToBase64(entry);
+//     const exit_base64 = imageToBase64(exit);
+
+//     const images = [crop_base64, entry_base64, exit_base64];
+
+//     // park in
+//     const payload = {
+//       token: old_ticket[0].parkonic_token,
+//       parkin_time: old_ticket[0].entry_time,
+//       plate_code: old_ticket[0].plate_code,
+//       plate_number: old_ticket[0].plate_number,
+//       emirates: old_ticket[0].plate_city,
+//       conf: old_ticket[0].confidence,
+//       spot_number: old_ticket[0].spot_number,
+//       pole_id: old_ticket[0].access_point_id,// here is access pont id
+//       images: images
+//     };
+
+//     try {
+//       logger.info("try park-in OCR ticket:", { admin: req.user, ticket_id: req.params.id });
+//       const response = await axios.post(
+//         'https://dev.parkonic.com/api/street-parking/v2/park-in',
+//         payload,
+//         {
+//           headers: {
+//             'Content-Type': 'application/json'
+//           },
+//           timeout: 10000
+//         }
+//       );
+//       old_ticket[0].parkonic_trip_id = response.data.trip_id;
+//       const updated_ticket = ticketModel.addTripId(ticket_id,response.data.trip_id);
+//       console.log('API response:', response.data);
+//       logger.success("OCR ticket parked-in successfully", { admin: req.user,trip_id: response.data.trip_id });
+//     } catch (error) {
+//       logger.error('OCR Ticket park-in failed', { admin: req.user, error: error.response?.data || error.message });
+//       console.error(
+//         'API error:',
+//         error.response?.data || error.message
+//       );
+//       res.json({err:error.response?.data || error.message});
+//     }
+
+//     // park out 
+//     const payload_out = {
+//       token: old_ticket[0].parkonic_token,
+//       parkout_time: old_ticket[0].exit_time,
+//       plate_code: old_ticket[0].plate_code,
+//       plate_number: old_ticket[0].plate_number,
+//       emirates: old_ticket[0].plate_city,
+//       spot_number: old_ticket[0].spot_number,
+//       pole_id: old_ticket[0].access_point_id,// here is access pont id
+//       images: images
+//     };
+//     try {
+//       logger.info("try park-out OCR ticket:", { admin: req.user, ticket_id: req.params.id });
+//       const response_out = await axios.post(
+//       'https://dev.parkonic.com/api/street-parking/v2/park-out',
+//       payload_out,
+//       {
+//         headers: {
+//           'Content-Type': 'application/json'
+//         },
+//         timeout: 10000
+//       }
+//     );
+//     // res.json({
+//     //   status: response_out.status,
+//     //   data: response_out.data
+//     // });
+//     logger.success("OCR Ticket parked-out successfully", { admin: req.user, response:response_out.data });
+//     } catch (error) {
+//       logger.error('OCR Ticket park-out failed', { admin: req.user, error: error.response?.data || error.message });
+//       console.error(
+//         'API out error:',
+//         error.response?.data || error.message
+//       );
+//       res.json({err:error.response?.data || error.message});
+//     }
+
+
+//     delete old_ticket[0].id;
+//     const cancel_result = await submittedTicketsModel.createTicket(old_ticket[0]);
+
+//     if (cancel_result.affectedRows === 0) {
+//       return res.status(404).json({ message: 'Ticket not submitted !!!' });
+//     }
+
+//     const result = await ticketModel.deleteTicket(ticket_id);
+
+//     if (result.affectedRows === 0) {
+//       return res.status(404).json({ message: 'Ticket not found!' });
+//     }
+
+//     logger.success("OCR Ticket submitted successfully", { admin: req.user, result });
+//     await conn.commit();
+//     res.json({ message: 'Ticket submitted successfully', id: ticket_id, data: result });
+//   } catch (err) {
+//     await conn.rollback();
+//     logger.error('OCR Ticket submitted failed', { admin: req.user, error: err.message });
+//     console.error(err);
+//     res.status(500).json({ message: 'Database error', error: err.message });
+//   } finally {
+//     conn.release();
+//   }
+// });
+
 router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermission("submit_ticket"), async (req, res) => {
   const conn = await pool.getConnection();
   try {
+    logger.info("submit ocr ticket:", { admin: req.user, ticket_id: req.params.id, body: req.body });
+    const ticket_id = parseInt(req.params.id, 10);
+    if (!ticket_id) throw new Error('Ticket ID is required and must be a number');
 
-    logger.info("submit ocr ticket:", { admin: req.user, ticket_id: req.params.id ,body: req.body});
-    const ticket_id = parseInt(req.params.id, 10); // convert to number
-    
-    if (!ticket_id) {
-      return res.status(400).json({ message: 'Ticket ID is required and must be a number' });
-    }
-    // update section
-    const {
-      number,
-      code,
-      city,
-      confidence,
-      exit_time,
-      entry_time,
-    } = req.body;
-
-    const diffMs = new Date(exit_time) - new Date(entry_time) ;
+    // --- update ticket ---
+    const { number, code, city, confidence, exit_time, entry_time } = req.body;
+    const diffMs = new Date(exit_time) - new Date(entry_time);
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-    const parkingDuration = `${hours}h ${minutes}m`.toString();
+    const parkingDuration = `${hours}h ${minutes}m`;
 
     const updateTicketData = await ticketModel.updateTicket(ticket_id, {
-      number: number || null,
-      code: code || null,
-      city: city || null,
+      plate_number: number || null,
+      plate_code: code || null,
+      plate_city: city || null,
       confidence: confidence || null,
       exit_time: exit_time || null,
       parking_duration: parkingDuration || null,
     });
 
-    if (!updateTicketData) {
-      return res.status(400).json({ message: 'Nothing to update' });
-    }
-    // end update ticket
+    if (!updateTicketData) throw new Error('Nothing to update');
 
-
+    // --- get old ticket ---
     const old_ticket = await ticketModel.getTicketById(ticket_id);
-    if (!old_ticket[0]) {
-      return res.status(404).json({ message: 'Ticket not found' });
-    }
+    if (!old_ticket[0]) throw new Error('Ticket not found');
 
-    const crop = old_ticket[0].crop_image || "";
-    const entry = old_ticket[0].entry_image || "";
-    const exit = old_ticket[0].exit_image || "";
-    const crop_base64 = imageToBase64(crop);
-    const entry_base64 = imageToBase64(entry);
-    const exit_base64 = imageToBase64(exit);
-
+    const crop_base64 = imageToBase64(old_ticket[0].crop_image || "");
+    const entry_base64 = imageToBase64(old_ticket[0].entry_image || "");
+    const exit_base64 = imageToBase64(old_ticket[0].exit_image || "");
     const images = [crop_base64, entry_base64, exit_base64];
 
-    // park in
-    const payload = {
-      token: old_ticket[0].parkonic_token,
-      parkin_time: old_ticket[0].entry_time,
-      plate_code: old_ticket[0].plate_code,
-      plate_number: old_ticket[0].plate_number,
-      emirates: old_ticket[0].plate_city,
-      conf: old_ticket[0].confidence,
-      spot_number: old_ticket[0].spot_number,
-      pole_id: old_ticket[0].access_point_id,// here is access pont id
-      images: images
-    };
-
+    // --- park-in ---
     try {
-      logger.info("try park-in OCR ticket:", { admin: req.user, ticket_id: req.params.id });
-      const response = await axios.post(
-        'https://dev.parkonic.com/api/street-parking/v2/park-in',
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          timeout: 10000
-        }
-      );
-      old_ticket[0].parkonic_trip_id = response.data.trip_id;
-      const updated_ticket = ticketModel.addTripId(ticket_id,response.data.trip_id);
-      console.log('API response:', response.data);
-      logger.success("OCR ticket parked-in successfully", { admin: req.user,trip_id: response.data.trip_id });
-    } catch (error) {
-      logger.error('OCR Ticket park-in failed', { admin: req.user, error: error.response?.data || error.message });
-      console.error(
-        'API error:',
-        error.response?.data || error.message
-      );
-      res.json({err:error.response?.data || error.message});
-    }
+      logger.info("try park-in OCR ticket", { admin: req.user, ticket_id });
+      const payload = {
+        token: old_ticket[0].parkonic_token,
+        parkin_time: old_ticket[0].entry_time,
+        plate_code: old_ticket[0].plate_code,
+        plate_number: old_ticket[0].plate_number,
+        emirates: old_ticket[0].plate_city,
+        conf: old_ticket[0].confidence,
+        spot_number: old_ticket[0].spot_number,
+        pole_id: old_ticket[0].access_point_id,
+        images
+      };
 
-    // park out 
-    const payload_out = {
-      token: old_ticket[0].parkonic_token,
-      parkout_time: old_ticket[0].exit_time,
-      plate_code: old_ticket[0].plate_code,
-      plate_number: old_ticket[0].plate_number,
-      emirates: old_ticket[0].plate_city,
-      spot_number: old_ticket[0].spot_number,
-      pole_id: old_ticket[0].access_point_id,// here is access pont id
-      images: images
-    };
-    try {
-      logger.info("try park-out OCR ticket:", { admin: req.user, ticket_id: req.params.id });
-      const response_out = await axios.post(
-      'https://dev.parkonic.com/api/street-parking/v2/park-out',
-      payload_out,
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000
+      const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/park-in', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+
+      if (response.data.status === false){
+        logger.error('OCR Ticket submission Park-in failed', { admin: req.user, response:esponse.data });
+        throw new Error(`Park-in failed: ${JSON.stringify(response.data)}`);
       }
-    );
-    // res.json({
-    //   status: response_out.status,
-    //   data: response_out.data
-    // });
-    logger.success("OCR Ticket parked-out successfully", { admin: req.user, response:response_out.data });
-    } catch (error) {
-      logger.error('OCR Ticket park-out failed', { admin: req.user, error: error.response?.data || error.message });
-      console.error(
-        'API out error:',
-        error.response?.data || error.message
-      );
-      res.json({err:error.response?.data || error.message});
+
+      old_ticket[0].parkonic_trip_id = response.data.trip_id;
+      await ticketModel.addTripId(ticket_id, response.data.trip_id);
+
+      logger.success("OCR ticket parked-in successfully", { admin: req.user, trip_id: response.data.trip_id });
+    } catch (err) {
+      logger.error('OCR Ticket park-in failed', { admin: req.user, error: err.response?.data || err.message });
+      throw err; // re-throw to outer catch
     }
 
+    // --- park-out ---
+    try {
+      logger.info("try park-out OCR ticket", { admin: req.user, ticket_id });
+      const payload_out = {
+        token: old_ticket[0].parkonic_token,
+        parkout_time: old_ticket[0].exit_time,
+        plate_code: old_ticket[0].plate_code,
+        plate_number: old_ticket[0].plate_number,
+        emirates: old_ticket[0].plate_city,
+        spot_number: old_ticket[0].spot_number,
+        pole_id: old_ticket[0].access_point_id,
+        images
+      };
+      const response_out = await axios.post('https://dev.parkonic.com/api/street-parking/v2/park-out', payload_out, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
 
+      if (response_out.data.status === false){
+        logger.error('OCR Ticket submission Park-out failed', { admin: req.user, response:response_out.data });
+        throw new Error(`Park-out failed: ${JSON.stringify(response_out.data)}`);
+      }
+      logger.success("OCR Ticket parked-out successfully", { admin: req.user, response: response_out.data });
+    } catch (err) {
+      logger.error('OCR Ticket park-out failed', { admin: req.user, error: err.response?.data || err.message });
+      throw err; // re-throw to outer catch
+    }
+
+    // --- submit ticket ---
     delete old_ticket[0].id;
     const cancel_result = await submittedTicketsModel.createTicket(old_ticket[0]);
-
-    if (cancel_result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Ticket not submitted !!!' });
-    }
+    if (cancel_result.affectedRows === 0) throw new Error('Ticket not submitted');
 
     const result = await ticketModel.deleteTicket(ticket_id);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Ticket not found!' });
-    }
+    if (result.affectedRows === 0) throw new Error('Ticket not found');
 
     logger.success("OCR Ticket submitted successfully", { admin: req.user, result });
     await conn.commit();
     res.json({ message: 'Ticket submitted successfully', id: ticket_id, data: result });
+
   } catch (err) {
     await conn.rollback();
-    logger.error('OCR Ticket submitted failed', { admin: req.user, error: err.message });
-    console.error(err);
-    res.status(500).json({ message: 'Database error', error: err.message });
+    logger.error('OCR Ticket submission failed', { admin: req.user, error: err.message });
+    res.status(500).json({ message: 'Failed', error: err.message });
   } finally {
     conn.release();
   }
 });
+
 
 
 

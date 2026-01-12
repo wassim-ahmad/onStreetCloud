@@ -353,12 +353,14 @@ exports.updateTicket = async (id, data) => {
     parking_duration,
   } = data;
 
-  const updates = [];
+  const confidenceInt = confidence !== undefined && confidence !== null ? Number(confidence) : 'NULL';
 
+  const updates = [];
+  
   if (plate_number) updates.push(`plate_number='${plate_number}'`);
   if (plate_code) updates.push(`plate_code='${plate_code}'`);
   if (plate_city) updates.push(`plate_city='${plate_city}'`);
-  if (confidence !== undefined) updates.push(`confidence='${confidence}'`);
+  if (confidenceInt !== undefined) updates.push(`confidence='${Number(confidenceInt)}'`);
   if (exit_time) updates.push(`exit_time='${exit_time}'`);
   if (parking_duration) updates.push(`parking_duration='${parking_duration}'`);
 
