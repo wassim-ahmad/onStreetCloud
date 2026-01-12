@@ -7,11 +7,11 @@ async function mainQuery(query) {
 }
 
 exports.getSetting = async (name) => {
-  // s.value,
   const query = `
     SELECT 
       s.id,
       s.name,
+      s.value,
       JSON_VALID(s.value)
       FROM settings s
       WHERE s.name = '${name}'
