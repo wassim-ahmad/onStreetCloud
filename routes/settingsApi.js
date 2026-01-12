@@ -60,7 +60,8 @@ router.get(
       }
 
       const settings = rows[0];
-      const ssettings = JSON.parse(settings.value);
+      const ssettings = settings.value;
+      // const ssettings = JSON.parse(settings.value);
       logger.success("Settings fetched successfully", { admin: req.user });
 
       res.json(ssettings);
