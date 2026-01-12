@@ -63,7 +63,7 @@ router.get('/camera/:camera_id', verifyToken, requirePermission("view_camera"), 
 router.post('/create-camera', verifyToken, requirePermission("create_camera"), upload.none(), async (req, res) => {
   try {
     logger.info("create camera: ",{ admin: req.user, body: req.body });
-    const { pole_id, camera_ip, access_point_id, number_of_parking} = req.body;
+    const { pole_id, camera_ip, access_point_id, number_of_parking,zone_name} = req.body;
 
     // Validate required fields
     if (!pole_id) {
@@ -72,13 +72,17 @@ router.post('/create-camera', verifyToken, requirePermission("create_camera"), u
     if (!camera_ip) {
       return res.status(400).json({ message: "Camera IP is required" });
     }
-
+    if (!zone_name) {
+      return res.status(400).json({ message: "Zone name is required" });
+    }
     const result = await cameraModel.createCamera({
       pole_id: Number(pole_id),
       camera_ip: camera_ip || null,
       access_point_id: access_point_id || null,
-      number_of_parking: number_of_parking !== undefined ? Number(number_of_parking) : null
+      number_of_parking: number_of_parking !== undefined ? Number(number_of_parking) : null,
+      zone_name: zone_name || null,
     });
+
     const integration_data = {data:req.body, type:'create'};
     await excecuteCameraBySocket(integration_data);
 
@@ -101,13 +105,14 @@ router.put('/update-camera/:id', upload.none(), verifyToken, requirePermission("
   try {
     logger.info("update camera: ",{ admin: req.user, body: req.body });
     const id = req.params.id;
-    const { pole_id, camera_ip, access_point_id, number_of_parking } = req.body;
+    const { pole_id, camera_ip, access_point_id, number_of_parking,zone_name } = req.body;
     const old_camera = await cameraModel.getCameraById(id);
     const result = await cameraModel.updateCamera(id, {
       pole_id,
       camera_ip,
       access_point_id,
-      number_of_parking
+      number_of_parking,
+      zone_name
     });
 
     if (!result) {
@@ -336,6 +341,33 @@ router.get("/cameras_all_with_status", verifyToken, requirePermission("view_came
     logger.error('get all cameras failed', { admin: req.user, error: err.message });
     console.error(err);
     res.status(500).send("Error fetching poles");
+  }
+});
+
+// last report
+router.get('/camera-last-report/:zone_name', verifyToken, requirePermission("edit_camera"), async (req, res) => {
+  try {
+    logger.info("camera last report by zone_name: ",{ admin: req.user, body: req.params });
+    const zone_name = req.params.zone_name;
+    const camera = await cameraModel.addLastReport(zone_name);
+
+    if(camera.affectedRows == 0){
+      logger.error('camera not found', { admin: req.user, zone_name: zone_name });
+      res.json({
+      message: 'camera not found!',
+      data: camera
+    });
+    }
+    
+    logger.success("camera add last report successfully", { admin: req.user, camera: camera });
+    res.json({
+      message: 'last report add successfully',
+      data: camera
+    });
+  } catch (err) {
+    logger.error('camera add last report failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err });
   }
 });
 

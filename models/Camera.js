@@ -29,7 +29,7 @@ exports.getCamerasCountByPoleCode = async (poleCode) => {
     FROM cameras c
     JOIN poles p ON c.pole_id = p.id
     WHERE c.deleted_at IS NULL AND p.code = '${poleCode}'
-    `;
+  `;
   
   const result = await mainQuery(query);
   return result[0]?.totalCount || 0;
@@ -194,15 +194,16 @@ exports.getDeletedCameraById = (camera_id) => {
 };
 
 exports.createCamera = async (data) => {
-  const { pole_id, camera_ip, access_point_id, number_of_parking } = data;
+  const { pole_id, camera_ip, access_point_id, number_of_parking,zone_name } = data;
 
   const query = `
-    INSERT INTO cameras (pole_id, camera_ip, access_point_id, number_of_parking)
+    INSERT INTO cameras (pole_id, camera_ip, access_point_id, number_of_parking,zone_name)
     VALUES (
       ${Number(pole_id)},
       ${camera_ip ? `'${camera_ip}'` : 'NULL'},
       ${access_point_id ? `'${access_point_id}'` : 'NULL'},
-      ${typeof number_of_parking === 'number' ? number_of_parking : 'NULL'}
+      ${typeof number_of_parking === 'number' ? number_of_parking : 'NULL'},
+      '${zone_name}'
     );
   `;
 
@@ -210,7 +211,7 @@ exports.createCamera = async (data) => {
 };
 
 exports.updateCamera = async (id, data) => {
-  const { pole_id, camera_ip, access_point_id, number_of_parking } = data;
+  const { pole_id, camera_ip, access_point_id, number_of_parking,zone_name } = data;
 
   const updates = [];
 
@@ -225,6 +226,9 @@ exports.updateCamera = async (id, data) => {
   }
   if (number_of_parking !== undefined) {
     updates.push(`number_of_parking = ${typeof Number(number_of_parking) === 'number' ? number_of_parking : 'NULL'}`);
+  }
+  if (zone_name !== undefined) {
+    updates.push(`zone_name = ${zone_name ? `'${zone_name}'` : 'NULL'}`);
   }
 
   // nothing to update
@@ -373,4 +377,15 @@ exports.getCamerasCountByZone = (zoneId) => {
   `;
   return mainQuery(query).then(result => result[0].total);
 };
+
+exports.addLastReport = (zone_name) => {
+  const query = `
+    UPDATE cameras
+    SET last_report = NOW()
+    WHERE zone_name = '${zone_name}'
+      AND deleted_at IS NULL;
+  `;
+
+  return mainQuery(query);
+}
 
