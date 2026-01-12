@@ -24,7 +24,8 @@ router.get(
       }
       
       rows.forEach(setting => {
-        const value = JSON.parse(setting.value)
+        const value = setting.value
+        // const value = JSON.parse(setting.value)
         setting.value = value;
 
         console.log(setting);
@@ -53,7 +54,6 @@ router.get(
       logger.info("get setting by name:", { admin: req.user, name });
 
       const rows = await settingsModel.getSetting(name);
-      console.log(rows);
 
       if (!rows.length) {
         return res.status(404).json({ message: 'Settings not found' });
