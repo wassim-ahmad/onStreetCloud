@@ -9,6 +9,7 @@ const { getCamerasWithStatus , excecuteCameraBySocket , getAllCamerasWithStatus}
 const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
 const { allOnlineCameras , getOnlinePoleCameras } = require("../utils/cameras");
+const settingsModel = require('../models/Setting');
 
 
 // Get all cameras without pagination
@@ -349,14 +350,20 @@ router.get('/camera-last-report/:zone_name', verifyToken, requirePermission("edi
   try {
     logger.info("camera last report by zone_name: ",{ admin: req.user, body: req.params });
     const zone_name = req.params.zone_name;
+    const old_record = await cameraModel.getCameraByZoneName(zone_name);
+    console.log(old_record,'=++++++++===================================================');
+    if(!old_record[0]){
+      return res.status(400).json({ message: 'Camera not found!' });
+    }
+
     const camera = await cameraModel.addLastReport(zone_name);
 
     if(camera.affectedRows == 0){
       logger.error('camera not found', { admin: req.user, zone_name: zone_name });
       res.json({
-      message: 'camera not found!',
-      data: camera
-    });
+        message: 'camera not found!',
+        data: camera
+      });
     }
     
     logger.success("camera add last report successfully", { admin: req.user, camera: camera });
@@ -370,7 +377,6 @@ router.get('/camera-last-report/:zone_name', verifyToken, requirePermission("edi
     res.status(500).json({ message: 'Database error', error: err });
   }
 });
-
 
 
 module.exports = router;
