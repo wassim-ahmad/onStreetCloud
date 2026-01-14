@@ -355,6 +355,40 @@ router.get('/camera-last-report/:zone_name', verifyToken, requirePermission("edi
     if(!old_record[0]){
       return res.status(400).json({ message: 'Camera not found!' });
     }
+    const camera_issue_time = await settingsModel.getSetting('camera_issue_time');
+    console.log(camera_issue_time[0].value,'=++++++++===================================================');
+
+    const dbValue = camera_issue_time[0].value;
+    const [timeStr] = JSON.parse(dbValue);
+    const [daysPart, hmPart] = timeStr.split(" "); // ["5", "09:30"]
+    const [hoursPart, minutesPart] = hmPart.split(":"); // ["09", "30"]
+
+    const days = Number(daysPart);
+    const hours = Number(hoursPart);
+    const minutes = Number(minutesPart);
+
+
+ const LIMIT_MS =
+    (days * 24 * 60 * 60 * 1000) +
+    (hours * 60 * 60 * 1000) +
+    (minutes * 60 * 1000);
+
+    console.log(LIMIT_MS);
+
+    // const LIMIT_SECONDS = LIMIT;               // 464, (in seconds)
+    // const LIMIT_MS = LIMIT_SECONDS * 1000;     // in milliseconds
+
+    const lastReport = new Date(old_record[0].last_report).getTime();
+    console.log(lastReport,LIMIT_MS,'--------------');
+
+    if (Date.now() - lastReport >= LIMIT_MS) {
+      // auto-escalate
+      // auto-close
+      // auto-create new issue
+      console.log(Date.now(),lastReport,LIMIT_MS,'--------------');
+    }
+
+
 
     const camera = await cameraModel.addLastReport(zone_name);
 

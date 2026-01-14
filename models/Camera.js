@@ -400,7 +400,7 @@ exports.getCameraByZoneName = (zone_name) => {
     FROM cameras c
     JOIN poles p ON c.pole_id = p.id
     JOIN zones z ON p.zone_id = z.id
-    WHERE c.id = '${zone_name}' AND c.deleted_at IS NULL
+    WHERE c.zone_name = '${zone_name}' AND c.deleted_at IS NULL
     LIMIT 1;
   `;
   return mainQuery(query);

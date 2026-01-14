@@ -424,6 +424,8 @@ connection.query(insertQuery,['Restore User', 'restore_user', 'users can restore
 connection.query(insertQuery,['Restore User', 'view_setting', 'users can view settings']);
 connection.query(insertQuery,['Restore User', 'edit_setting', 'users can edit settings']);
 
+connection.query(insertQuery,['View Issues', 'view_issue', 'users can view issues']);
+
 var insertQuery = "INSERT INTO user_permissions (user_id, permission_id) VALUES (?,?)";
 connection.query(insertQuery,[1, 1]);
 connection.query(insertQuery,[1, 2]);
@@ -473,6 +475,7 @@ connection.query(insertQuery,[1, 45]);
 connection.query(insertQuery,[1, 46]);
 connection.query(insertQuery,[1, 47]);
 connection.query(insertQuery,[1, 48]);
+connection.query(insertQuery,[1, 49]);
 
 var insertQuery = "INSERT INTO settings (`name`, `value`) VALUES (?,?)";
 connection.query(insertQuery,['ticket_allowed_ips','["192.168.1.10","10.0.0.5"]']);
