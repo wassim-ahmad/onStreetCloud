@@ -473,36 +473,6 @@ router.post('/cancel-ocr-ticket/:id', upload.none(), verifyToken, requirePermiss
       return res.status(400).json({ message: 'Ticket ID is required and must be a number' });
     }
 
-     // update section
-    const {
-      number,
-      code,
-      city,
-      confidence,
-      exit_time,
-      entry_time,
-    } = req.body;
-
-    const diffMs = new Date(exit_time) - new Date(entry_time) ;
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-    const parkingDuration = `${hours}h ${minutes}m`.toString();
-
-    const updateTicketData = await ticketModel.updateTicket(ticket_id, {
-      plate_number: number || null,
-      plate_code: code || null,
-      plate_city: city || null,
-      confidence: confidence || null,
-      exit_time: exit_time || null,
-      parking_duration: parkingDuration || null,
-    });
-
-    if (!updateTicketData) {
-      return res.status(400).json({ message: 'Nothing to update' });
-    }
-    // end update ticket
-
     const old_ticket = await ticketModel.getTicketById(ticket_id);
     if (!old_ticket[0]) {
       return res.status(404).json({ message: 'Ticket not found' });
