@@ -192,7 +192,6 @@ exports.getTicketById = (ticket_id) => {
 };
 
 exports.createTicket = async (data) => {
-  console.log(data);
   const {
     camera_id,
     parkonic_token,
