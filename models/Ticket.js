@@ -285,6 +285,7 @@ exports.createTicket = async (data) => {
     code,
     city,
     status,
+    confidence,
     entry_time,
     exit_time,
     parking_duration,
@@ -299,6 +300,9 @@ exports.createTicket = async (data) => {
     exit_image
   } = data;
 
+  // const confidenceInt = confidence !== undefined && confidence !== null ? Number(confidence) : 'NULL';
+        // '${confidenceInt}',
+
   const query = `
     INSERT INTO tickets (
       camera_id,
@@ -307,6 +311,7 @@ exports.createTicket = async (data) => {
       plate_code,
       plate_city,
       status,
+      confidence,
       entry_time,
       exit_time,
       parking_duration,
@@ -326,6 +331,7 @@ exports.createTicket = async (data) => {
       ${code ? `'${code}'` : 'NULL'},
       ${city ? `'${city}'` : 'NULL'},
       '${status}',
+      '${confidence}',
       ${entry_time ? `'${entry_time}'` : 'NULL'},
       ${exit_time ? `'${exit_time}'` : 'NULL'},
       ${parking_duration ? `'${parking_duration}'` : 'NULL'},
@@ -340,6 +346,36 @@ exports.createTicket = async (data) => {
       ${exit_image ? `'${exit_image}'` : 'NULL'}
     )
   `;
+  return mainQuery(query);
+};
+
+exports.updateIfExistTicket = async (id, data) => {
+  const {
+    plate_number,
+    plate_code,
+    plate_city,
+    exit_time,
+    parking_duration,
+  } = data;
+
+  // const confidenceInt = confidence !== undefined && confidence !== null ? Number(confidence) : 'NULL';
+
+  const updates = [];
+  
+  if (plate_number) updates.push(`plate_number='${plate_number}'`);
+  if (plate_code) updates.push(`plate_code='${plate_code}'`);
+  if (plate_city) updates.push(`plate_city='${plate_city}'`);
+  if (exit_time) updates.push(`exit_time='${exit_time}'`);
+  if (parking_duration) updates.push(`parking_duration='${parking_duration}'`);
+
+  if (updates.length === 0) return null; // nothing to update
+
+  const query = `
+    UPDATE tickets
+    SET ${updates.join(', ')}
+    WHERE id = ${id}
+  `;
+
   return mainQuery(query);
 };
 

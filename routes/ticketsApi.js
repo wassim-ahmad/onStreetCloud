@@ -159,6 +159,7 @@ router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), u
       code,
       city,
       status,
+      confidence,
       entry_time,
       exit_time,
       spot_number,
@@ -169,8 +170,8 @@ router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), u
       exit_video_url,
     } = req.body;
 
-    if (!camera_ip || !parkonic_token || !status || !access_point_id) {
-      return res.status(400).json({ message: "camera_ip, parkonic_token, status and access_point_id are required" });
+    if (!camera_ip || !parkonic_token || !status || !access_point_id || !confidence) {
+      return res.status(400).json({ message: "camera_ip, parkonic_token, status, access_point_id and confidence are required" });
     }
 
     const exists = await ticketModel.checkTicketExists({
@@ -187,7 +188,7 @@ router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), u
       const hours = Math.floor(diffMs / (1000 * 60 * 60));
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
       const parkingDuration = `${hours}h ${minutes}m`.toString();
-      const result = await ticketModel.updateTicket(exists[0].id, {
+      const result = await ticketModel.updateIfExistTicket(exists[0].id, {
         exit_time: exit_time || null,
         parking_duration: parkingDuration || null,
       });
@@ -232,6 +233,7 @@ router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), u
       code: code || null,
       city: city || null,
       status,
+      confidence: confidence || 0,
       entry_time: entry_time || null,
       exit_time: exit_time || null,
       parking_duration: parkingDuration || null,
@@ -261,52 +263,52 @@ router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), u
 });
 
 // update ticket
-// router.put('/update-ticket/:id', upload.none(), verifyToken, requirePermission("edit_ticket"), async (req, res) => {
-//   try {
-//     logger.info("update ticket:", { admin: req.user, body: req.body });
-//     const id = req.params.id;
+router.put('/update-ticket/:id', upload.none(), verifyToken, requirePermission("edit_ticket"), async (req, res) => {
+  try {
+    logger.info("update ticket:", { admin: req.user, body: req.body });
+    const id = req.params.id;
 
-//     const {
-//       number,
-//       code,
-//       city,
-//       confidence,
-//       exit_time,
-//       entry_time,
-//     } = req.body;
+    const {
+      number,
+      code,
+      city,
+      confidence,
+      exit_time,
+      entry_time,
+    } = req.body;
 
-//     const diffMs = new Date(exit_time) - new Date(entry_time) ;
+    const diffMs = new Date(exit_time) - new Date(entry_time) ;
 
-//     const hours = Math.floor(diffMs / (1000 * 60 * 60));
-//     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
-//     const parkingDuration = `${hours}h ${minutes}m`.toString();
+    const parkingDuration = `${hours}h ${minutes}m`.toString();
 
-//     const result = await ticketModel.updateTicket(id, {
-//       number: number || null,
-//       code: code || null,
-//       city: city || null,
-//       confidence: confidence || null,
-//       exit_time: exit_time || null,
-//       parking_duration: parkingDuration || null,
-//     });
+    const result = await ticketModel.updateTicket(id, {
+      number: number || null,
+      code: code || null,
+      city: city || null,
+      confidence: confidence || null,
+      exit_time: exit_time || null,
+      parking_duration: parkingDuration || null,
+    });
 
-//     if (!result) {
-//       return res.status(400).json({ message: 'Nothing to update' });
-//     }
+    if (!result) {
+      return res.status(400).json({ message: 'Nothing to update' });
+    }
 
-//     logger.success("update ticket successfully", { admin: req.user, result });
-//     res.json({
-//       message: 'Ticket updated successfully',
-//       data: result
-//     });
+    logger.success("update ticket successfully", { admin: req.user, result });
+    res.json({
+      message: 'Ticket updated successfully',
+      data: result
+    });
 
-//   } catch (err) {
-//     logger.error('update ticket failed', { admin: req.user, error: err.message });
-//     console.error(err);
-//     res.status(500).json({ message: 'Database error', error: err.message });
-//   }
-// });
+  } catch (err) {
+    logger.error('update ticket failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  }
+});
 
 // delete ticket
 router.delete('/delete-ticket/:id', verifyToken, requirePermission("delete_ticket"), async (req, res) => {
@@ -694,24 +696,6 @@ router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermiss
     logger.info("submit ocr ticket:", { admin: req.user, ticket_id: req.params.id, body: req.body });
     const ticket_id = parseInt(req.params.id, 10);
     if (!ticket_id) throw new Error('Ticket ID is required and must be a number');
-
-    // --- update ticket ---
-    const { number, code, city, confidence, exit_time, entry_time } = req.body;
-    const diffMs = new Date(exit_time) - new Date(entry_time);
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    const parkingDuration = `${hours}h ${minutes}m`;
-
-    const updateTicketData = await ticketModel.updateTicket(ticket_id, {
-      plate_number: number || null,
-      plate_code: code || null,
-      plate_city: city || null,
-      confidence: confidence || null,
-      exit_time: exit_time || null,
-      parking_duration: parkingDuration || null,
-    });
-
-    if (!updateTicketData) throw new Error('Nothing to update');
 
     // --- get old ticket ---
     const old_ticket = await ticketModel.getTicketById(ticket_id);
