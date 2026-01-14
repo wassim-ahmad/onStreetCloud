@@ -10,6 +10,7 @@ const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
 const { allOnlineCameras , getOnlinePoleCameras } = require("../utils/cameras");
 const settingsModel = require('../models/Setting');
+const issueModel = require('../models/Issue');
 
 
 // Get all cameras without pagination
@@ -351,45 +352,49 @@ router.get('/camera-last-report/:zone_name', verifyToken, requirePermission("edi
     logger.info("camera last report by zone_name: ",{ admin: req.user, body: req.params });
     const zone_name = req.params.zone_name;
     const old_record = await cameraModel.getCameraByZoneName(zone_name);
-    console.log(old_record,'=++++++++===================================================');
     if(!old_record[0]){
       return res.status(400).json({ message: 'Camera not found!' });
     }
     const camera_issue_time = await settingsModel.getSetting('camera_issue_time');
-    console.log(camera_issue_time[0].value,'=++++++++===================================================');
+
+    if(!camera_issue_time[0]){
+      return res.status(400).json({ message: 'No time setting from camera issue!' });
+    }
 
     const dbValue = camera_issue_time[0].value;
     const [timeStr] = JSON.parse(dbValue);
-    const [daysPart, hmPart] = timeStr.split(" "); // ["5", "09:30"]
-    const [hoursPart, minutesPart] = hmPart.split(":"); // ["09", "30"]
+    const [daysPart, hmPart] = timeStr.split(" ");
+    const [hoursPart, minutesPart] = hmPart.split(":");
 
     const days = Number(daysPart);
     const hours = Number(hoursPart);
     const minutes = Number(minutesPart);
 
 
- const LIMIT_MS =
-    (days * 24 * 60 * 60 * 1000) +
-    (hours * 60 * 60 * 1000) +
-    (minutes * 60 * 1000);
-
-    console.log(LIMIT_MS);
-
-    // const LIMIT_SECONDS = LIMIT;               // 464, (in seconds)
-    // const LIMIT_MS = LIMIT_SECONDS * 1000;     // in milliseconds
+    const LIMIT_MS =
+      (days * 24 * 60 * 60 * 1000) +
+      (hours * 60 * 60 * 1000) +
+      (minutes * 60 * 1000);
 
     const lastReport = new Date(old_record[0].last_report).getTime();
-    console.log(lastReport,LIMIT_MS,'--------------');
-
     if (Date.now() - lastReport >= LIMIT_MS) {
-      // auto-escalate
-      // auto-close
-      // auto-create new issue
-      console.log(Date.now(),lastReport,LIMIT_MS,'--------------');
+      const diffMs = new Date(Date.now()) - new Date(old_record[0].last_report);
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const duration = `${hours}h ${minutes}m`.toString();
+
+      const camera_issue = issueModel.createIssue({
+        camera_id:old_record[0].id,
+        pole_id:old_record[0].pole_id,
+        last_report:new Date(old_record[0].last_report).toISOString().slice(0, 19).replace("T", " "),
+        next_report:new Date(Date.now()).toISOString().slice(0, 19).replace("T", " "),
+        duration:duration
+      });
+      if(camera_issue.insertId == 0){
+        logger.error('camera issue create faild!', { admin: req.user, zone_name: zone_name });
+        res.status(400).json({ error: true });
+      }
     }
-
-
-
     const camera = await cameraModel.addLastReport(zone_name);
 
     if(camera.affectedRows == 0){
@@ -399,7 +404,6 @@ router.get('/camera-last-report/:zone_name', verifyToken, requirePermission("edi
         data: camera
       });
     }
-    
     logger.success("camera add last report successfully", { admin: req.user, camera: camera });
     res.json({
       message: 'last report add successfully',
