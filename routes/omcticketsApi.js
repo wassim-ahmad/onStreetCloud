@@ -139,6 +139,7 @@ router.post('/create-omc-ticket', verifyToken, requirePermission("create_omctick
       code,
       city,
       status,
+      confidence,
       entry_time,
       exit_time,
       spot_number,
@@ -149,8 +150,8 @@ router.post('/create-omc-ticket', verifyToken, requirePermission("create_omctick
       exit_video_url,
     } = req.body;
 
-    if (!camera_ip || !parkonic_token || !status || !access_point_id) {
-      return res.status(400).json({ message: "camera_ip, parkonic_token, status and access_point_id are required" });
+    if (!camera_ip || !parkonic_token || !status || !access_point_id || !confidence) {
+      return res.status(400).json({ message: "camera_ip, parkonic_token, status, access_point_id and confidence are required" });
     }
 
     const entry_image = req.files?.entry_image
@@ -184,6 +185,7 @@ router.post('/create-omc-ticket', verifyToken, requirePermission("create_omctick
       code: code || null,
       city: city || null,
       status,
+      confidence: confidence || 0,
       entry_time: entry_time || null,
       exit_time: exit_time || null,
       parking_duration: parkingDuration || null,
@@ -427,7 +429,7 @@ router.get(
 );
 
 // cancel ticket
-router.post('/cancel-omc-ticket/:id', upload.none(), verifyToken, requirePermission("cancel_omcticket"), allowedTicketIPs, async (req, res) => {
+router.get('/cancel-omc-ticket/:id', verifyToken, requirePermission("cancel_omcticket"), allowedTicketIPs, async (req, res) => {
   try {
     logger.info("cancel omc ticket:", { admin: req.user, ticket_id: req.params.id,body: req.body });
     const ticket_id = parseInt(req.params.id, 10); // convert to number
@@ -435,36 +437,6 @@ router.post('/cancel-omc-ticket/:id', upload.none(), verifyToken, requirePermiss
     if (!ticket_id) {
       return res.status(400).json({ message: 'Ticket ID is required and must be a number' });
     }
-
-    // update section
-    const {
-      number,
-      code,
-      city,
-      confidence,
-      exit_time,
-      entry_time,
-    } = req.body;
-
-    const diffMs = new Date(exit_time) - new Date(entry_time) ;
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-    const parkingDuration = `${hours}h ${minutes}m`.toString();
-
-    const updateTicketData = await omcticketModel.updateTicket(ticket_id, {
-      plate_number: number || null,
-      plate_code: code || null,
-      plate_city: city || null,
-      confidence: confidence || null,
-      exit_time: exit_time || null,
-      parking_duration: parkingDuration || null,
-    });
-  
-    if (!updateTicketData) {
-      return res.status(400).json({ message: 'Nothing to update' });
-    }
-    // end update ticket
 
     const old_ticket = await omcticketModel.getTicketById(ticket_id);
     if (!old_ticket[0]) {
