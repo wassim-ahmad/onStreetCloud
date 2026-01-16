@@ -10,7 +10,7 @@ const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
 
 // get all camera issues without paginate
-router.get('/issues-all', verifyToken, requirePermission("view_ticket"), async (req, res) => {
+router.get('/issues-all', verifyToken, requirePermission("view_issue"), async (req, res) => {
   try {
     logger.info("get all camera issues without paginate.", { admin: req.user });
 
@@ -29,7 +29,7 @@ router.get('/issues-all', verifyToken, requirePermission("view_ticket"), async (
 });
 
 // get camera issues paginate with total count
-router.get('/issues', verifyToken, requirePermission("view_ticket"), async (req, res) => {
+router.get('/issues', verifyToken, requirePermission("view_issue"), async (req, res) => {
   try {
     logger.info("get issues:", { admin: req.user });
 
@@ -89,7 +89,7 @@ router.get(
 
 
 // create new camera issue
-router.post('/create-issue', verifyToken, requirePermission("create_ticket"), upload.none(), async (req, res) => {
+router.post('/create-issue', verifyToken, requirePermission("create_issue"), upload.none(), async (req, res) => {
   try {
     logger.info("create camera issue:", { admin: req.user, body: req.body });
 
@@ -137,7 +137,7 @@ router.post('/create-issue', verifyToken, requirePermission("create_ticket"), up
 });
 
 // resolve
-router.put('/resolve-issue/:id', upload.none(), verifyToken, requirePermission("edit_ticket"), async (req, res) => {
+router.put('/resolve-issue/:id', upload.none(), verifyToken, requirePermission("resolve_issue"), async (req, res) => {
   try {
     logger.info("resoleve camera issue:", { admin: req.user, body: req.body, id:req.params.id });
     const id = req.params.id;
@@ -178,7 +178,7 @@ router.put('/resolve-issue/:id', upload.none(), verifyToken, requirePermission("
 router.get(
   '/issues/by-camera/:camera_id',
   verifyToken,
-  requirePermission("view_ticket"),
+  requirePermission("view_issue"),
   async (req, res) => {
     try {
       logger.info("get camera issues by camera:", {
@@ -241,7 +241,7 @@ router.get(
 router.get(
   '/issues/by-location/:location_id',
   verifyToken,
-  requirePermission("view_ticket"),
+  requirePermission("view_issue"),
   async (req, res) => {
     try {
       const location_id = Number(req.params.location_id);
@@ -306,7 +306,7 @@ router.get(
 router.get(
   '/issues/unresolved',
   verifyToken,
-  requirePermission("view_ticket"),
+  requirePermission("view_issue"),
   async (req, res) => {
     try {
       const page = Number(req.query.page) || 1;

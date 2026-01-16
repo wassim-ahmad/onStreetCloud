@@ -78,7 +78,7 @@ function getDevicesWithStatus() {
 async function getCamerasWithStatus(pole_code) {
   const allCamerasFromDB = await cameraModel.getCamerasByPoleCode(pole_code);
   const onlineCameras = getOnlinePoleCameras(pole_code);
-
+console.log(allCamerasFromDB,'00--');
   return allCamerasFromDB.map(dev => {
     const isOnline = onlineCameras.some(
       d => d.device.camera_ip === dev.camera_ip

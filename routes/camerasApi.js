@@ -267,7 +267,7 @@ router.get("/cameras_with_status/:pole_code", verifyToken, requirePermission("vi
     const pole_code = req.params.pole_code;
     const camerasCount = await cameraModel.getCamerasCountByPoleCode(pole_code);
     const onlineCamerasCount = await getOnlinePoleCameras(pole_code).length;
-    console.log('=================== ',await getOnlinePoleCameras(pole_code));
+    console.log('=================== ',await getOnlinePoleCameras(pole_code),pole_code,req.query.page);
     const offlineCamerasCount = parseInt(camerasCount) - parseInt(onlineCamerasCount);
     const cameras = await getCamerasWithStatus(pole_code);
 
@@ -281,7 +281,7 @@ router.get("/cameras_with_status/:pole_code", verifyToken, requirePermission("vi
     const paginatedItems = cameras.slice(startIndex, endIndex);
 
     const totalPages = Math.ceil(camerasCount / limit);
-
+console.log('=====' , paginatedItems);
 
     logger.success("get cameras status successfully", { admin: req.user, pole_code: pole_code });
     res.json({
@@ -347,7 +347,7 @@ router.get("/cameras_all_with_status", verifyToken, requirePermission("view_came
 });
 
 // last report
-router.get('/camera-last-report/:zone_name', verifyToken, requirePermission("edit_camera"), async (req, res) => {
+router.get('/camera-last-report/:zone_name', verifyToken, requirePermission("last_report"), async (req, res) => {
   try {
     logger.info("camera last report by zone_name: ",{ admin: req.user, body: req.params });
     const zone_name = req.params.zone_name;

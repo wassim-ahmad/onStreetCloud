@@ -223,7 +223,6 @@ exports.createTicket = async (data) => {
 
   const confidenceInt = confidence !== undefined && confidence !== null ? Number(confidence) : 'NULL';
 
-  console.log(confidence,confidenceInt,'=====================');
   const query = `
     INSERT INTO cancelled (
       camera_id,

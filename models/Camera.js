@@ -294,7 +294,7 @@ exports.getCamerasByPole = (pole_id, perPage = 9, offset = 0) => {
   return mainQuery(query);
 };
 
-exports.getCamerasByPoleCode = (pole_code, perPage = 9, offset = 0) => {
+exports.getCamerasByPoleCode = (pole_code) => {
   const query = `
     SELECT
       c.id,
@@ -319,7 +319,6 @@ exports.getCamerasByPoleCode = (pole_code, perPage = 9, offset = 0) => {
     WHERE c.deleted_at IS NULL
       AND p.code = '${pole_code}'
     ORDER BY c.id DESC
-    LIMIT ${perPage} OFFSET ${offset};
   `;
 
   return mainQuery(query);

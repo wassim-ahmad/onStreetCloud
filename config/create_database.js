@@ -398,6 +398,7 @@ connection.query(insertQuery,['Create Camera', 'create_camera', 'users can creat
 connection.query(insertQuery,['Edit Camera', 'edit_camera', 'users can edit cameras']);
 connection.query(insertQuery,['Delete Camera', 'delete_camera', 'users can delete cameras']);
 connection.query(insertQuery,['Restore Camera', 'restore_camera', 'users can restore cameras']);
+connection.query(insertQuery,['Last report', 'last_report', 'users can create last report camera']);
 
 connection.query(insertQuery,['View Tickets', 'view_ticket', 'users can view tickets']);
 connection.query(insertQuery,['Create Ticket', 'create_ticket', 'users can create tickets']);
@@ -425,6 +426,8 @@ connection.query(insertQuery,['Restore User', 'view_setting', 'users can view se
 connection.query(insertQuery,['Restore User', 'edit_setting', 'users can edit settings']);
 
 connection.query(insertQuery,['View Issues', 'view_issue', 'users can view issues']);
+connection.query(insertQuery,['Create Issues', 'create_issue', 'users can create issues']);
+connection.query(insertQuery,['Resolve Issues', 'resolve_issue', 'users can resolve issues']);
 
 var insertQuery = "INSERT INTO user_permissions (user_id, permission_id) VALUES (?,?)";
 connection.query(insertQuery,[1, 1]);
@@ -476,6 +479,9 @@ connection.query(insertQuery,[1, 46]);
 connection.query(insertQuery,[1, 47]);
 connection.query(insertQuery,[1, 48]);
 connection.query(insertQuery,[1, 49]);
+connection.query(insertQuery,[1, 50]);
+connection.query(insertQuery,[1, 51]);
+connection.query(insertQuery,[1, 52]);
 
 var insertQuery = "INSERT INTO settings (`name`, `value`) VALUES (?,?)";
 connection.query(insertQuery,['ticket_allowed_ips','["192.168.1.10","10.0.0.5"]']);
