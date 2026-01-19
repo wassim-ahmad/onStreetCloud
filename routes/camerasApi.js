@@ -13,7 +13,7 @@ const settingsModel = require('../models/Setting');
 const issueModel = require('../models/Issue');
 
 
-// Get all cameras without pagination
+// Get all cameras with pagination
 router.get('/cameras', verifyToken, requirePermission("view_camera"), async (req, res) => {
   try {
     logger.info("get cameras: ",{ admin: req.user,body: req.query });
@@ -37,6 +37,35 @@ router.get('/cameras', verifyToken, requirePermission("view_camera"), async (req
     });
   } catch (err) {
     logger.error('get cameras failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err });
+  }
+});
+
+// Get all deleted cameras with pagination
+router.get('/deleted-cameras', verifyToken, requirePermission("restore_camera"), async (req, res) => {
+  try {
+    logger.info("get deleted cameras: ",{ admin: req.user,body: req.query });
+    const page_id = parseInt(req.query.page) || 1;
+    const perPage = parseInt(req.query.perPage) || 9;
+    const offset = (page_id - 1) * perPage;
+
+    const totalCount = await cameraModel.getDeletedCamerasTotalCount();
+
+    const currentPage = page_id;
+    const pageUri = '/deleted-cameras';
+    const Paginate = new Pagination(totalCount, currentPage, pageUri, perPage);
+
+    const camerasPaginate = await cameraModel.getDeletedCamerasPaginate(perPage, offset);
+    logger.success("get deleted cameras successfully", {admin: req.user, totalCount: totalCount});
+    res.json({
+      message: 'Deleted cameras fetched successfully',
+      total: totalCount,
+      data: camerasPaginate,
+      links: Paginate.links()
+    });
+  } catch (err) {
+    logger.error('get deleted cameras failed', { admin: req.user, error: err.message });
     console.error(err);
     res.status(500).json({ message: 'Database error', error: err });
   }

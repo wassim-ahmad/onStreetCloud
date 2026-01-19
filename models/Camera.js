@@ -23,6 +23,12 @@ exports.getCamerasTotalCount = async () => {
   return result[0]?.totalCount || 0;
 };
 
+exports.getDeletedCamerasTotalCount = async () => {
+  const query = 'SELECT COUNT(*) AS totalCount FROM cameras WHERE deleted_at IS NOT NULL';
+  const result = await mainQuery(query);
+  return result[0]?.totalCount || 0;
+};
+
 exports.getCamerasCountByPoleCode = async (poleCode) => {
   const query = `
     SELECT COUNT(c.id) AS totalCount
@@ -99,6 +105,37 @@ exports.getCamerasPaginate = (perPage, offset) => {
     JOIN poles p ON c.pole_id = p.id AND p.deleted_at IS NULL
     JOIN zones z ON p.zone_id = z.id AND z.deleted_at IS NULL
     WHERE c.deleted_at IS NULL
+    ORDER BY c.id DESC
+    LIMIT ${perPage} OFFSET ${offset};
+  `;
+  return mainQuery(query);
+};
+
+exports.getDeletedCamerasPaginate = (perPage, offset) => {
+  const query = `
+    SELECT
+      c.id,
+      c.camera_ip,
+      c.pole_id,
+      c.number_of_parking,
+      c.access_point_id,
+      c.zone_name,
+      c.last_report,
+      p.code AS pole_code,
+      p.router_ip AS pole_router_ip,
+      p.router_vpn_ip AS pole_router_vpn_ip,
+      p.lat AS pole_lat,
+      p.lng AS pole_lng,
+      p.zone_id AS pole_zone_id,
+      z.name AS zone,
+      l.name AS location,
+      DATE_FORMAT(c.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
+      DATE_FORMAT(c.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
+    FROM cameras c
+    JOIN poles p ON c.pole_id = p.id AND p.deleted_at IS NULL
+    JOIN zones z ON p.zone_id = z.id AND z.deleted_at IS NULL
+    JOIN locations l ON z.location_id = l.id AND l.deleted_at IS NULL
+    WHERE c.deleted_at IS NOT NULL
     ORDER BY c.id DESC
     LIMIT ${perPage} OFFSET ${offset};
   `;
