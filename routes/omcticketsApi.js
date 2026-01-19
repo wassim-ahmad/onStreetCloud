@@ -508,61 +508,45 @@ router.post('/submit-omc-ticket/:id', upload.none(), verifyToken, requirePermiss
     const crop_base64 = imageToBase64(old_ticket[0].crop_image || "");
     const entry_base64 = imageToBase64(old_ticket[0].entry_image || "");
     const exit_base64 = imageToBase64(old_ticket[0].exit_image || "");
-    const images = [crop_base64, entry_base64, exit_base64];
+    const in_images = [crop_base64, entry_base64];
+    const out_images = [exit_base64];
 
     // --- park-in ---
     try {
-      logger.info("try park-in OMC ticket", { admin: req.user, ticket_id });
+      logger.info("try submit OMC ticket immigration", { admin: req.user, ticket_id });
       const payload = {
         token: old_ticket[0].parkonic_token,
         parkin_time: old_ticket[0].entry_time,
+        parkout_time: old_ticket[0].exit_time,
         plate_code: old_ticket[0].plate_code,
         plate_number: old_ticket[0].plate_number,
         emirates: old_ticket[0].plate_city,
         conf: old_ticket[0].confidence,
         spot_number: old_ticket[0].spot_number,
         pole_id: old_ticket[0].access_point_id,
-        images
+        in_images,
+        out_images
       };
 
-      const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/park-in', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
 
-      if (response.data.status === false) throw new Error(`Park-in failed: ${JSON.stringify(response.data)}`);
-
+      if (response.data.status === false){
+        logger.error('OM Ticket submission failed immigration', { admin: req.user, response:response.data });
+        throw new Error(`Park-in failed: ${JSON.stringify(response.data)}`);
+      }
       old_ticket[0].parkonic_trip_id = response.data.trip_id;
       await omcticketModel.addTripId(ticket_id, response.data.trip_id);
 
-      logger.success("OMC ticket parked-in successfully", { admin: req.user, trip_id: response.data.trip_id });
+      logger.success("OMC ticket has been submitted successfully immigration", { admin: req.user, trip_id: response.data.trip_id });
     } catch (err) {
-      logger.error('OMC Ticket park-in failed', { admin: req.user, error: err.response?.data || err.message });
-      throw err; // re-throw to outer catch
-    }
-
-    // --- park-out ---
-    try {
-      logger.info("try park-out OMC ticket", { admin: req.user, ticket_id });
-      const payload_out = {
-        token: old_ticket[0].parkonic_token,
-        parkout_time: old_ticket[0].exit_time,
-        plate_code: old_ticket[0].plate_code,
-        plate_number: old_ticket[0].plate_number,
-        emirates: old_ticket[0].plate_city,
-        spot_number: old_ticket[0].spot_number,
-        pole_id: old_ticket[0].access_point_id,
-        images
-      };
-      const response_out = await axios.post('https://dev.parkonic.com/api/street-parking/v2/park-out', payload_out, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-
-      logger.success("OMC Ticket parked-out successfully", { admin: req.user, response: response_out.data });
-    } catch (err) {
-      logger.error('OMC Ticket park-out failed', { admin: req.user, error: err.response?.data || err.message });
+      logger.error('OMC Ticket submittion failed immigration', { admin: req.user, error: err.response?.data || err.message });
       throw err; // re-throw to outer catch
     }
 
     // --- submit ticket ---
     delete old_ticket[0].id;
-    const cancel_result = await submittedTicketsModel.createTicket(old_ticket[0]);
-    if (cancel_result.affectedRows === 0) throw new Error('Ticket not submitted');
+    const submit_result = await submittedTicketsModel.createTicket(old_ticket[0]);
+    if (submit_result.affectedRows === 0) throw new Error('Ticket not submitted');
 
     const ticket = old_ticket[0];
 
@@ -586,8 +570,116 @@ router.post('/submit-omc-ticket/:id', upload.none(), verifyToken, requirePermiss
     conn.release();
   }
 });
+// router.post('/submit-omc-ticket/:id', upload.none(), verifyToken, requirePermission("submit_omcticket"), allowedTicketIPs, async (req, res) => {
+//   const conn = await pool.getConnection();
+//   try {
+//     logger.info("submit omc ticket:", { admin: req.user, ticket_id: req.params.id, body: req.body });
+//     const ticket_id = parseInt(req.params.id, 10);
+//     if (!ticket_id) throw new Error('Ticket ID is required and must be a number');
 
+//     // --- update ticket ---
+//     const { number, code, city, confidence, exit_time, entry_time } = req.body;
+//     const diffMs = new Date(exit_time) - new Date(entry_time);
+//     const hours = Math.floor(diffMs / (1000 * 60 * 60));
+//     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+//     const parkingDuration = `${hours}h ${minutes}m`;
 
+//     const updateTicketData = await omcticketModel.updateTicket(ticket_id, {
+//       plate_number: number || null,
+//       plate_code: code || null,
+//       plate_city: city || null,
+//       confidence: confidence || null,
+//       exit_time: exit_time || null,
+//       parking_duration: parkingDuration || null,
+//     });
+
+//     if (!updateTicketData) throw new Error('Nothing to update');
+
+//     // --- get old ticket ---
+//     const old_ticket = await omcticketModel.getTicketById(ticket_id);
+//     if (!old_ticket[0]) throw new Error('Ticket not found');
+
+//     const crop_base64 = imageToBase64(old_ticket[0].crop_image || "");
+//     const entry_base64 = imageToBase64(old_ticket[0].entry_image || "");
+//     const exit_base64 = imageToBase64(old_ticket[0].exit_image || "");
+//     const images = [crop_base64, entry_base64, exit_base64];
+
+//     // --- park-in ---
+//     try {
+//       logger.info("try park-in OMC ticket", { admin: req.user, ticket_id });
+//       const payload = {
+//         token: old_ticket[0].parkonic_token,
+//         parkin_time: old_ticket[0].entry_time,
+//         plate_code: old_ticket[0].plate_code,
+//         plate_number: old_ticket[0].plate_number,
+//         emirates: old_ticket[0].plate_city,
+//         conf: old_ticket[0].confidence,
+//         spot_number: old_ticket[0].spot_number,
+//         pole_id: old_ticket[0].access_point_id,
+//         images
+//       };
+
+//       const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/park-in', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+
+//       if (response.data.status === false) throw new Error(`Park-in failed: ${JSON.stringify(response.data)}`);
+
+//       old_ticket[0].parkonic_trip_id = response.data.trip_id;
+//       await omcticketModel.addTripId(ticket_id, response.data.trip_id);
+
+//       logger.success("OMC ticket parked-in successfully", { admin: req.user, trip_id: response.data.trip_id });
+//     } catch (err) {
+//       logger.error('OMC Ticket park-in failed', { admin: req.user, error: err.response?.data || err.message });
+//       throw err; // re-throw to outer catch
+//     }
+
+//     // --- park-out ---
+//     try {
+//       logger.info("try park-out OMC ticket", { admin: req.user, ticket_id });
+//       const payload_out = {
+//         token: old_ticket[0].parkonic_token,
+//         parkout_time: old_ticket[0].exit_time,
+//         plate_code: old_ticket[0].plate_code,
+//         plate_number: old_ticket[0].plate_number,
+//         emirates: old_ticket[0].plate_city,
+//         spot_number: old_ticket[0].spot_number,
+//         pole_id: old_ticket[0].access_point_id,
+//         images
+//       };
+//       const response_out = await axios.post('https://dev.parkonic.com/api/street-parking/v2/park-out', payload_out, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+
+//       logger.success("OMC Ticket parked-out successfully", { admin: req.user, response: response_out.data });
+//     } catch (err) {
+//       logger.error('OMC Ticket park-out failed', { admin: req.user, error: err.response?.data || err.message });
+//       throw err; // re-throw to outer catch
+//     }
+
+//     // --- submit ticket ---
+//     delete old_ticket[0].id;
+//     const cancel_result = await submittedTicketsModel.createTicket(old_ticket[0]);
+//     if (cancel_result.affectedRows === 0) throw new Error('Ticket not submitted');
+
+//     const ticket = old_ticket[0];
+
+//     //Delete images from disk
+//     await deleteFile(ticket.entry_image);
+//     await deleteFile(ticket.crop_image);
+//     await deleteFile(ticket.exit_image);
+
+//     const result = await omcticketModel.deleteTicket(ticket_id);
+//     if (result.affectedRows === 0) throw new Error('Ticket not found');
+
+//     logger.success("OMC Ticket submitted successfully", { admin: req.user, result });
+//     await conn.commit();
+//     res.json({ message: 'Ticket submitted successfully', id: ticket_id, data: result });
+
+//   } catch (err) {
+//     await conn.rollback();
+//     logger.error('OMC Ticket submission failed', { admin: req.user, error: err.message });
+//     res.status(500).json({ message: 'Failed', error: err.message });
+//   } finally {
+//     conn.release();
+//   }
+// });
 
 
 

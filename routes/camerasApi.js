@@ -281,7 +281,6 @@ router.get("/cameras_with_status/:pole_code", verifyToken, requirePermission("vi
     const paginatedItems = cameras.slice(startIndex, endIndex);
 
     const totalPages = Math.ceil(camerasCount / limit);
-console.log('=====' , paginatedItems);
 
     logger.success("get cameras status successfully", { admin: req.user, pole_code: pole_code });
     res.json({

@@ -235,7 +235,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `parkonic_token` LONGTEXT NULL, \
     `spot_number` INT NOT NULL, \
     `camera_ip` VARCHAR(255) NULL, \
-    `plate_number` VARCHAR(20) NOT NULL, \
+    `plate_number` VARCHAR(20) NULL, \
     `plate_code` VARCHAR(10) NULL, \
     `plate_city` VARCHAR(50) NULL, \
     `status` VARCHAR(50) NULL, \
@@ -269,7 +269,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `parkonic_token` LONGTEXT NULL, \
     `spot_number` INT NOT NULL, \
     `camera_ip` VARCHAR(255) NULL, \
-    `plate_number` VARCHAR(20) NOT NULL, \
+    `plate_number` VARCHAR(20) NULL, \
     `plate_code` VARCHAR(10) NULL, \
     `plate_city` VARCHAR(50) NULL, \
     `status` VARCHAR(50) NULL, \
