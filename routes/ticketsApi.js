@@ -15,6 +15,7 @@ const logger = require('../utils/logger');
 const axios = require('axios');
 const { requirePermission } = require("../middleware/permission_middleware");
 var pool = require('../config/dbConnection');
+const allowedTicketIPs = require("../middleware/allowTicketIps");
 
 function imageToBase64(path) {
   if (!path) {
@@ -53,7 +54,7 @@ const deleteFile = async (filePath) => {
 };
 
 // get all tickets without paginate
-router.get('/tickets-all', verifyToken, requirePermission("view_ticket"), async (req, res) => {
+router.get('/tickets-all', verifyToken, requirePermission("view_ticket"), allowedTicketIPs, async (req, res) => {
   try {
     logger.info("get all tickets without paginate.", { admin: req.user });
 
@@ -72,7 +73,7 @@ router.get('/tickets-all', verifyToken, requirePermission("view_ticket"), async 
 });
 
 // get tickets paginate with total count
-router.get('/tickets', verifyToken, requirePermission("view_ticket"), async (req, res) => {
+router.get('/tickets', verifyToken, requirePermission("view_ticket"), allowedTicketIPs, async (req, res) => {
   try {
     logger.info("get tickets:", { admin: req.user });
 
@@ -125,6 +126,7 @@ router.get(
   '/ticket/:ticket_id',
   verifyToken,
   requirePermission("view_ticket"),
+  allowedTicketIPs,
   async (req, res) => {
     try {
       const ticket_id = Number(req.params.ticket_id);
@@ -157,7 +159,7 @@ router.get(
 
 
 // create new ticket
-router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), upload.fields([
+router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), allowedTicketIPs, upload.fields([
     { name: 'entry_image', maxCount: 1 },
     { name: 'crop_image', maxCount: 1 },
     { name: 'exit_image', maxCount: 1 }
@@ -277,7 +279,7 @@ router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), u
 });
 
 // update ticket
-router.put('/update-ticket/:id', upload.none(), verifyToken, requirePermission("edit_ticket"), async (req, res) => {
+router.put('/update-ticket/:id', upload.none(), verifyToken, requirePermission("edit_ticket"), allowedTicketIPs, async (req, res) => {
   try {
     logger.info("update ticket:", { admin: req.user, body: req.body });
     const id = req.params.id;
@@ -325,7 +327,7 @@ router.put('/update-ticket/:id', upload.none(), verifyToken, requirePermission("
 });
 
 // delete ticket
-router.delete('/delete-ticket/:id', verifyToken, requirePermission("delete_ticket"), async (req, res) => {
+router.delete('/delete-ticket/:id', verifyToken, requirePermission("delete_ticket"), allowedTicketIPs, async (req, res) => {
   try {
     logger.info("delete ticket:", { admin: req.user, ticket_id: req.params.id });
 
@@ -365,6 +367,7 @@ router.get(
   '/tickets/by-camera/:camera_id',
   verifyToken,
   requirePermission("view_ticket"),
+  allowedTicketIPs,
   async (req, res) => {
     try {
       logger.info("get tickets by camera:", {
@@ -428,6 +431,7 @@ router.get(
   '/tickets/by-location/:location_id',
   verifyToken,
   requirePermission("view_ticket"),
+  allowedTicketIPs,
   async (req, res) => {
     try {
       const location_id = Number(req.params.location_id);
@@ -489,7 +493,7 @@ router.get(
 );
 
 // cancel ticket
-router.get('/cancel-ocr-ticket/:id', verifyToken, requirePermission("cancel_ticket"), async (req, res) => {
+router.get('/cancel-ocr-ticket/:id', verifyToken, requirePermission("cancel_ticket"), allowedTicketIPs, async (req, res) => {
   try {
     logger.info("cancel ocr ticket:", { admin: req.user, ticket_id: req.params.id,body: req.body });
     const ticket_id = parseInt(req.params.id, 10); // convert to number
@@ -535,7 +539,7 @@ router.get('/cancel-ocr-ticket/:id', verifyToken, requirePermission("cancel_tick
 });
 
 // submit ticket
-router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermission("submit_ticket"), async (req, res) => {
+router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermission("submit_ticket"), allowedTicketIPs, async (req, res) => {
   const conn = await pool.getConnection();
   try {
     logger.info("submit ocr ticket:", { admin: req.user, ticket_id: req.params.id, body: req.body });
@@ -569,8 +573,8 @@ router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermiss
         out_images
       };
 
-      // const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-      const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      // const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
 
       if (response.data.status === false){
         logger.error('OCR Ticket submission failed immigration', { admin: req.user, response:response.data });
