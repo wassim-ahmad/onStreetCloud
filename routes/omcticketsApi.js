@@ -532,8 +532,8 @@ router.post('/submit-omc-ticket/:id', upload.none(), verifyToken, requirePermiss
       const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
 
       if (response.data.status === false){
-        logger.error('OM Ticket submission failed immigration', { admin: req.user, response:response.data });
-        throw new Error(`Park-in failed: ${JSON.stringify(response.data)}`);
+        logger.error('OMC Ticket submission failed immigration', { admin: req.user, response:response.data });
+        throw new Error(`OMC tickets submission failed: ${JSON.stringify(response.data)}`);
       }
       old_ticket[0].parkonic_trip_id = response.data.trip_id;
       await omcticketModel.addTripId(ticket_id, response.data.trip_id);
