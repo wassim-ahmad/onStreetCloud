@@ -55,7 +55,7 @@ router.get('/statistics', verifyToken, allowedTicketIPs, async (req, res) => {
         tickets:{
             ocr: OcrTicketsCount,
             omc: OmcTicketsCount,
-            cancelled: cancelledTicketsCount,
+            cancelled: cancelledTicketsCount, 
             submitted: submittedTicketsCount,
         }
     }
