@@ -191,8 +191,8 @@ router.put('/restore-location/:id', verifyToken, requirePermission("restore_loca
 });
 
 // get tickets count by range date and location id
-router.post('/get-total-orc-tickets/:id', verifyToken, requirePermission("restore_location"), upload.none(), async (req, res) => {
-  // try {
+router.post('/get-total-ocr-tickets/:id', verifyToken, requirePermission("restore_location"), upload.none(), async (req, res) => {
+  try {
     logger.info("delete ocr tickets range by location id: ",{ admin: req.user, location_id: req.params.id });
     const locationId = parseInt(req.params.id, 10);
     if (!locationId) {
@@ -229,24 +229,21 @@ router.post('/get-total-orc-tickets/:id', verifyToken, requirePermission("restor
       end: formattedEnd
     });
 
-    res.json({ message: 'Location restored successfully', result: result });
+    if (!result) {
+      return res.status(404).json({ message: 'ocr tickets not found' });
+    }
 
-
-//     if (!result || result.affectedRows === 0) {
-//       return res.status(404).json({ message: 'Location not found or not deleted' });
-//     }
-
-//     logger.success("restore location successfully", { admin: req.user, result: result });
-//     res.json({ message: 'Location restored successfully', id: locationId });
-//   } catch (err) {
-//     logger.error('restore location failed', { admin: req.user, error: err.message });
-//     console.error(err);
-//     res.status(500).json({ message: 'Database error', error: err.message });
-//   }
+    logger.success("OCR tickets by location and date fetched successfully", { admin: req.user, result: result });
+    res.json({ message: 'OCR tickets by location and date fetched successfully', tickets: result[0].total });
+  } catch (err) {
+    logger.error('OCR tickets by location and date fetched failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  }
 });
 
 // delete ocr tickets range
-// router.post('/delete-orc-tickets/:id', verifyToken, requirePermission("restore_location"), async (req, res) => {
+// router.post('/delete-ocr-tickets/:id', verifyToken, requirePermission("restore_location"), async (req, res) => {
 //   try {
 //     logger.info("delete ocr tickets range by location id: ",{ admin: req.user, location_id: req.params.id });
 //     const locationId = parseInt(req.params.id, 10);

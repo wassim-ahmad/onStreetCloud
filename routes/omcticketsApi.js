@@ -108,13 +108,25 @@ router.get('/omc-ticket/:ticket_id', verifyToken, requirePermission("view_omctic
     const ticket_id = req.params.ticket_id;
     logger.info("get omc ticket by id:", { admin: req.user, ticket_id });
 
-    const ticket = await omcticketModel.getTicketById(ticket_id);
+    const rows = await omcticketModel.getTicketById(ticket_id);
+
+    if (!rows.length) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    const ticket = rows[0];
 
     logger.success("get omc ticket by id successfully", { admin: req.user, ticket });
     res.json({
-      message: 'Ticket fetched successfully',
-      data: ticket
-    });
+        message: 'Ticket fetched successfully',
+          ticket,
+          pagination: {
+            prev_ticket_id: ticket.prev_ticket_id,
+            next_ticket_id: ticket.next_ticket_id,
+            rank: ticket.rank_position,
+            total: ticket.total_tickets
+          }
+      });
   } catch (err) {
     logger.error('get omc ticket by id failed', { admin: req.user, error: err.message });
     console.error(err);
@@ -528,8 +540,8 @@ router.post('/submit-omc-ticket/:id', upload.none(), verifyToken, requirePermiss
         out_images
       };
 
-      // const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-      const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      // const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
 
       if (response.data.status === false){
         logger.error('OMC Ticket submission failed immigration', { admin: req.user, response:response.data });

@@ -140,6 +140,7 @@ router.get(
 
       const ticket = rows[0];
 
+      logger.error('get OCR ticket by id successfully', { admin: req.user, error: err.message });
       res.json({
         message: 'Ticket fetched successfully',
           ticket,
@@ -151,7 +152,7 @@ router.get(
           }
       });
     } catch (err) {
-      logger.error('get ticket by id failed', { admin: req.user, error: err.message });
+      logger.error('get OCR ticket by id failed', { admin: req.user, error: err.message });
       res.status(500).json({ message: 'Database error' });
     }
   }
@@ -573,8 +574,8 @@ router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermiss
         out_images
       };
 
-      // const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-      const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      // const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
 
       if (response.data.status === false){
         logger.error('OCR Ticket submission failed immigration', { admin: req.user, response:response.data });

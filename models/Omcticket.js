@@ -143,50 +143,58 @@ exports.getTicketsPaginate = (perPage, offset) => {
 
 exports.getTicketById = (ticket_id) => {
   const query = `
-    SELECT 
-      t.id,
-      t.camera_id,
-      t.parkonic_token,
-      c.access_point_id,
-      t.spot_number,
-      t.camera_ip,
-      t.plate_number,
-      t.plate_code,
-      t.plate_city,
-      t.status,
-      t.zone_name,
-      t.zone_region,
-      t.confidence,
-      DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
-      DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
-      t.parking_duration,
-      t.parkonic_trip_id,
-      t.entry_image_path,
-      t.exit_clip_path,
-      t.entry_image,
-      t.crop_image,
-      t.exit_image,
+    SELECT *
+    FROM (
+      SELECT
+        t.id,
+        t.camera_id,
+        t.parkonic_token,
+        c.access_point_id,
+        t.spot_number,
+        t.camera_ip,
+        t.plate_number,
+        t.plate_code,
+        t.plate_city,
+        t.status,
+        t.zone_name,
+        t.zone_region,
+        t.confidence,
+        DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
+        DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+        t.parking_duration,
+        t.parkonic_trip_id,
+        t.entry_image_path,
+        t.exit_clip_path,
+        t.entry_image,
+        t.crop_image,
+        t.exit_image,
 
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.entry_video_url
-      END AS entry_video_url,
+        CASE
+          WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+          THEN 'EXPIRED'
+          ELSE t.entry_video_url
+        END AS entry_video_url,
 
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.exit_video_url
-      END AS exit_video_url,
+        CASE
+          WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+          THEN 'EXPIRED'
+          ELSE t.exit_video_url
+        END AS exit_video_url,
 
-      t.created_at,
-      t.updated_at
-    FROM omctickets t
-    INNER JOIN cameras c ON c.id = t.camera_id
-    WHERE t.id = ${Number(ticket_id)}
-    LIMIT 1;
+        t.created_at,
+        t.updated_at,
+
+        -- 🔢 pagination logic
+        LAG(t.id)  OVER (ORDER BY t.id) AS prev_ticket_id,
+        LEAD(t.id) OVER (ORDER BY t.id) AS next_ticket_id,
+        COUNT(*)   OVER ()              AS total_tickets,
+        ROW_NUMBER() OVER (ORDER BY t.id) AS rank_position
+
+      FROM omctickets t
+      INNER JOIN cameras c ON c.id = t.camera_id
+    ) ranked
+    WHERE ranked.id = ${Number(ticket_id)}
   `;
-
 
   return mainQuery(query);
 };
@@ -298,7 +306,7 @@ exports.addTripId = async (id, trip_id) => {
   if (updates.length === 0) return null; // nothing to update
 
   const query = `
-    UPDATE tickets
+    UPDATE omctickets
     SET ${updates.join(', ')}
     WHERE id = ${id}
   `;
