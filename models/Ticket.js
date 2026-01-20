@@ -435,6 +435,33 @@ exports.deleteTicket = async (id) => {
   return mainQuery(query);
 };
 
+exports.countTicketsByLocationAndRangeDate = async ({ location_id, start, end }) => {
+  const query = `
+    SELECT COUNT(*) AS total
+    FROM tickets t
+    JOIN cameras c ON t.camera_id = c.id
+    JOIN poles p ON c.pole_id = p.id
+    JOIN zones z ON p.zone_id = z.id
+    WHERE z.location_id = ${Number(location_id)}
+      AND t.created_at BETWEEN '${start}' AND '${end}'
+  `;
+  return mainQuery(query);
+};
+
+exports.deleteTicketRange = async ({ location_id , start, end }) => {
+  const query = `
+     DELETE t
+    FROM tickets t
+    INNER JOIN cameras c ON t.camera_id = c.id
+    INNER JOIN poles p ON c.pole_id = p.id
+    INNER JOIN zones z ON p.zone_id = z.id
+    WHERE z.location_id = ${Number(location_id)}
+      AND t.created_at BETWEEN '${start}' AND '${end}'
+  `;
+
+  return mainQuery(query);
+};
+
 exports.getTicketsPaginateByCamera = (camera_id, perPage, offset) => {
   const query = `
     SELECT

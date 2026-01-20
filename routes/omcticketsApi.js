@@ -150,8 +150,8 @@ router.post('/create-omc-ticket', verifyToken, requirePermission("create_omctick
       exit_video_url,
     } = req.body;
 
-    if (!camera_ip || !parkonic_token || !status || !access_point_id || !confidence) {
-      return res.status(400).json({ message: "camera_ip, parkonic_token, status, access_point_id and confidence are required" });
+    if (!camera_ip || !parkonic_token || !status || !access_point_id) {
+      return res.status(400).json({ message: "camera_ip, parkonic_token, status and access_point_id are required" });
     }
 
     const entry_image = req.files?.entry_image
