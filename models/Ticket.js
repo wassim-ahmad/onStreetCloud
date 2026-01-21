@@ -1,4 +1,22 @@
+const fs_promise = require('fs/promises');
+const path = require('path');
+
 var pool = require('../config/dbConnection');
+
+async function deleteImage(filePath) {
+  if (!filePath) return;
+
+  const fullPath = path.resolve(filePath);
+
+  try {
+    await fs_promise.unlink(fullPath);
+    console.log("Deleted file:", fullPath);
+  } catch (err) {
+    if (err.code !== "ENOENT") {
+      console.error("Failed to delete file:", fullPath, err);
+    }
+  }
+}
 
 // async function mainQuery(query) {
 //   const db = await connectDB();
@@ -449,6 +467,24 @@ exports.countTicketsByLocationAndRangeDate = async ({ location_id, start, end })
 };
 
 exports.deleteTicketRange = async ({ location_id , start, end }) => {
+  const selectQuery = `
+    SELECT t.entry_image, t.crop_image, t.exit_image
+    FROM tickets t
+    JOIN cameras c ON t.camera_id = c.id
+    JOIN poles p ON c.pole_id = p.id
+    JOIN zones z ON p.zone_id = z.id
+    WHERE z.location_id = ${Number(location_id)}
+      AND t.created_at BETWEEN '${start}' AND '${end}'
+  `;
+
+  const rows = await mainQuery(selectQuery);
+
+  for (const row of rows) {
+    await deleteImage(row.entry_image);
+    await deleteImage(row.crop_image);
+    await deleteImage(row.exit_image);
+  }
+
   const query = `
      DELETE t
     FROM tickets t
