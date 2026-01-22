@@ -6,6 +6,7 @@ const { verifyToken } = require('../config/auth');
 const locationModel = require('../models/Location');
 const ticketModel = require('../models/Ticket');
 const omcticketModel = require('../models/Omcticket');
+const cancelledTicketsModel = require('../models/Cancelledticket');
 const Pagination = require('../utils/pagination');
 const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
@@ -212,10 +213,6 @@ router.post('/get-total-ocr-tickets/:id', verifyToken, requirePermission("delete
     //   console.log(type);
     // }
 
-    // Try to parse dates
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-
     // Strict date regex: YYYY-MM-DD
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -263,10 +260,6 @@ router.post('/delete-ocr-tickets/:id', verifyToken, requirePermission("delete_ti
     if (!start || !end) {
       throw new Error('Start and end dates are required');
     }
-
-    // Try to parse dates
-    const startDate = new Date(start);
-    const endDate = new Date(end);
 
     // Strict date regex: YYYY-MM-DD
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -316,10 +309,6 @@ router.post('/get-total-omc-tickets/:id', verifyToken, requirePermission("delete
       throw new Error('Start and end dates are required');
     }
 
-    // Try to parse dates
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-
     // Strict date regex: YYYY-MM-DD
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -368,10 +357,6 @@ router.post('/delete-omc-tickets/:id', verifyToken, requirePermission("delete_om
       throw new Error('Start and end dates are required');
     }
 
-    // Try to parse dates
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-
     // Strict date regex: YYYY-MM-DD
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -400,6 +385,102 @@ router.post('/delete-omc-tickets/:id', verifyToken, requirePermission("delete_om
     res.json({ message: 'OMC tickets by location and date fetched successfully', tickets: result });
   } catch (err) {
     logger.error('OMC tickets by location and date fetched failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  }
+});
+
+// get cancelled tickets count by range date and location id
+router.post('/get-total-cancelled-tickets/:id', verifyToken, requirePermission("delete_cancelled"), upload.none(), async (req, res) => {
+  try {
+    logger.info("delete cancelled tickets range by location id: ",{ admin: req.user, location_id: req.params.id });
+    const locationId = parseInt(req.params.id, 10);
+    if (!locationId) {
+      return res.status(400).json({ message: 'Location ID is required and must be a number' });
+    }
+
+    const { start , end } = req.body;
+
+    if (!start || !end) {
+      throw new Error('Start and end dates are required');
+    }
+
+    // Strict date regex: YYYY-MM-DD
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+    if (!dateRegex.test(start)) {
+      throw new Error('Start date must be a valid date in YYYY-MM-DD format');
+    }
+    if (!dateRegex.test(end)) {
+      throw new Error('End date must be a valid date in YYYY-MM-DD format');
+    }
+
+    // Convert to MySQL datetime
+    const formattedStart = `${start} 00:00:00`;
+    const formattedEnd = `${end} 23:59:59`;
+
+    const result = await cancelledTicketsModel.countTicketsByLocationAndRangeDate({
+      location_id: 1,
+      start: formattedStart,
+      end: formattedEnd
+    });
+
+    if (!result) {
+      return res.status(404).json({ message: 'Cancelled tickets not found' });
+    }
+
+    logger.success("Cancelled tickets by location and date fetched successfully", { admin: req.user, result: result });
+    res.json({ message: 'Cancelled tickets by location and date fetched successfully', tickets: result[0].total });
+  } catch (err) {
+    logger.error('Cancelled tickets by location and date fetched failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  }
+});
+
+// delete cancelled tickets range
+router.post('/delete-cancelled-tickets/:id', verifyToken, requirePermission("delete_cancelled"), upload.none(), async (req, res) => {
+  try {
+    logger.info("delete cancelled tickets range by location id: ",{ admin: req.user, location_id: req.params.id });
+    const locationId = parseInt(req.params.id, 10);
+    if (!locationId) {
+      return res.status(400).json({ message: 'Location ID is required and must be a number' });
+    }
+
+    const { start , end } = req.body;
+
+    if (!start || !end) {
+      throw new Error('Start and end dates are required');
+    }
+
+    // Strict date regex: YYYY-MM-DD
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+    if (!dateRegex.test(start)) {
+      throw new Error('Start date must be a valid date in YYYY-MM-DD format');
+    }
+    if (!dateRegex.test(end)) {
+      throw new Error('End date must be a valid date in YYYY-MM-DD format');
+    }
+
+    // Convert to MySQL datetime
+    const formattedStart = `${start} 00:00:00`;
+    const formattedEnd = `${end} 23:59:59`;
+
+    const result = await cancelledTicketsModel.deleteTicketRange({
+      location_id: 1,
+      start: formattedStart,
+      end: formattedEnd
+    });
+
+    if (!result || result.affectedRows === 0) {
+      return res.status(404).json({ message: 'No tickets to delete !' });
+    }
+
+    logger.success("Cancelled tickets by location and date fetched successfully", { admin: req.user, result: result });
+    res.json({ message: 'Cancelled tickets by location and date fetched successfully', tickets: result });
+  } catch (err) {
+    logger.error('Cancelled tickets by location and date fetched failed', { admin: req.user, error: err.message });
     console.error(err);
     res.status(500).json({ message: 'Database error', error: err.message });
   }

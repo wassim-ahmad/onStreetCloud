@@ -34,7 +34,7 @@ async function mainQuery(query) {
 }
 
 exports.getTicketsTotalCount = async () => {
-  const query = 'SELECT COUNT(*) AS totalCount FROM cancelled';
+  const query = 'SELECT COUNT(*) AS totalCount FROM holdtickets';
   const result = await mainQuery(query);
   return result[0]?.totalCount || 0;
 };
@@ -42,7 +42,7 @@ exports.getTicketsTotalCount = async () => {
 exports.getTicketsTotalCountByCamera = (camera_id) => {
   const query = `
     SELECT COUNT(*) AS total
-    FROM cancelled
+    FROM holdtickets
     WHERE camera_id = ${Number(camera_id)}
   `;
   return mainQuery(query);
@@ -51,7 +51,7 @@ exports.getTicketsTotalCountByCamera = (camera_id) => {
 exports.getTicketsTotalCountByLocation = (location_id) => {
   const query = `
     SELECT COUNT(*) AS total
-    FROM cancelled t
+    FROM holdtickets t
     INNER JOIN cameras c ON c.id = t.camera_id
     INNER JOIN poles p ON p.id = c.pole_id
     INNER JOIN zones z ON z.id = p.zone_id
@@ -100,9 +100,8 @@ exports.getTickets = () => {
       END AS exit_video_url,
 
       t.created_at,
-      t.updated_at,
-      t.type
-    FROM cancelled t
+      t.updated_at
+    FROM holdtickets t
     INNER JOIN cameras c ON c.id = t.camera_id
     ORDER BY t.id DESC
   `;
@@ -118,8 +117,8 @@ exports.getTicketsPaginate = (perPage, offset) => {
       t.parkonic_token,
       c.access_point_id,
       t.spot_number,
-      t.plate_number,
       t.camera_ip,
+      t.plate_number,
       t.plate_code,
       t.plate_city,
       t.status,
@@ -149,9 +148,8 @@ exports.getTicketsPaginate = (perPage, offset) => {
       END AS exit_video_url,
 
       t.created_at,
-      t.updated_at,
-      t.type
-    FROM cancelled t
+      t.updated_at
+    FROM holdtickets t
     INNER JOIN cameras c ON c.id = t.camera_id
     ORDER BY t.id DESC
     LIMIT ${perPage} OFFSET ${offset};
@@ -163,51 +161,58 @@ exports.getTicketsPaginate = (perPage, offset) => {
 
 exports.getTicketById = (ticket_id) => {
   const query = `
-    SELECT 
-      t.id,
-      t.camera_id,
-      t.parkonic_token,
-      c.access_point_id,
-      t.spot_number,
-      t.camera_ip,
-      t.plate_number,
-      t.plate_code,
-      t.plate_city,
-      t.status,
-      t.zone_name,
-      t.zone_region,
-      t.confidence,
-      DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
-      DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
-      t.parking_duration,
-      t.parkonic_trip_id,
-      t.entry_image_path,
-      t.exit_clip_path,
-      t.entry_image,
-      t.crop_image,
-      t.exit_image,
+    SELECT *
+    FROM (
+      SELECT
+        t.id,
+        t.camera_id,
+        t.parkonic_token,
+        c.access_point_id,
+        t.spot_number,
+        t.camera_ip,
+        t.plate_number,
+        t.plate_code,
+        t.plate_city,
+        t.status,
+        t.zone_name,
+        t.zone_region,
+        t.confidence,
+        DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
+        DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+        t.parking_duration,
+        t.parkonic_trip_id,
+        t.entry_image_path,
+        t.exit_clip_path,
+        t.entry_image,
+        t.crop_image,
+        t.exit_image,
 
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.entry_video_url
-      END AS entry_video_url,
+        CASE
+          WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+          THEN 'EXPIRED'
+          ELSE t.entry_video_url
+        END AS entry_video_url,
 
-      CASE
-        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
-        THEN 'EXPIRED'
-        ELSE t.exit_video_url
-      END AS exit_video_url,
+        CASE
+          WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+          THEN 'EXPIRED'
+          ELSE t.exit_video_url
+        END AS exit_video_url,
 
-      t.created_at,
-      t.updated_at,
-      t.type
-    FROM cancelled t
-    INNER JOIN cameras c ON c.id = t.camera_id
-    WHERE t.id = ${Number(ticket_id)}
-    LIMIT 1;
+        t.created_at,
+        t.updated_at,
+
+        -- 🔢 pagination logic
+        LAG(t.id)  OVER (ORDER BY t.id) AS prev_ticket_id,
+        LEAD(t.id) OVER (ORDER BY t.id) AS next_ticket_id,
+        COUNT(*)   OVER ()              AS total_tickets,
+        ROW_NUMBER() OVER (ORDER BY t.id) AS rank_position
+
+      FROM holdtickets t
+      INNER JOIN cameras c ON c.id = t.camera_id
+    ) ranked
+    WHERE ranked.id = ${Number(ticket_id)}
   `;
-
 
   return mainQuery(query);
 };
@@ -216,133 +221,96 @@ exports.createTicket = async (data) => {
   const {
     camera_id,
     parkonic_token,
-    spot_number,
-    camera_ip,
-    plate_number,
-    plate_code,
-    plate_city,
+    number,
+    code,
+    city,
     status,
-    zone_name,
-    zone_region,
     confidence,
     entry_time,
     exit_time,
     parking_duration,
-    parkonic_trip_id,
-    entry_image,
-    crop_image,
-    exit_image,
-    entry_image_path,
-    exit_clip_path,
+    spot_number,
+    camera_ip,
+    zone_name,
+    zone_region,
     entry_video_url,
     exit_video_url,
-    type
+    entry_image,
+    crop_image,
+    exit_image
   } = data;
 
-  const confidenceInt = confidence !== undefined && confidence !== null ? Number(confidence) : 'NULL';
-
   const query = `
-    INSERT INTO cancelled (
+    INSERT INTO holdtickets (
       camera_id,
       parkonic_token,
-      spot_number,
-      camera_ip,
       plate_number,
       plate_code,
       plate_city,
       status,
-      zone_name,
-      zone_region,
       confidence,
       entry_time,
       exit_time,
       parking_duration,
-      parkonic_trip_id,
-      entry_image,
-      crop_image,
-      exit_image,
-      entry_image_path,
-      exit_clip_path,
+      spot_number,
+      camera_ip,
+      zone_name,
+      zone_region,
       entry_video_url,
       exit_video_url,
-      type
+      entry_image,
+      crop_image,
+      exit_image
     ) VALUES (
       '${camera_id}',
-      ${parkonic_token ? `'${parkonic_token}'` : 'NULL'},
-      ${spot_number ? `'${spot_number}'` : 'NULL'},
-      ${camera_ip ? `'${camera_ip}'` : 'NULL'},
-      ${plate_number ? `'${plate_number}'` : 'NULL'},
-      ${plate_code ? `'${plate_code}'` : 'NULL'},
-      ${plate_city ? `'${plate_city}'` : 'NULL'},
-      ${status ? `'${status}'` : 'NULL'},
-      ${zone_name ? `'${zone_name}'` : 'NULL'},
-      ${zone_region ? `'${zone_region}'` : 'NULL'},
-      '${confidenceInt}',
+      '${parkonic_token}',
+      ${number ? `'${number}'` : 'NULL'},
+      ${code ? `'${code}'` : 'NULL'},
+      ${city ? `'${city}'` : 'NULL'},
+      '${status}',
+      '${confidence}',
       ${entry_time ? `'${entry_time}'` : 'NULL'},
       ${exit_time ? `'${exit_time}'` : 'NULL'},
       ${parking_duration ? `'${parking_duration}'` : 'NULL'},
-      ${parkonic_trip_id ? `'${parkonic_trip_id}'` : 'NULL'},
+      ${spot_number ? `'${spot_number}'` : 'NULL'},
+      '${camera_ip}',
+      ${zone_name ? `'${zone_name}'` : 'NULL'},
+      ${zone_region ? `'${zone_region}'` : 'NULL'},
+      ${entry_video_url ? `'${entry_video_url}'` : 'NULL'},
+      ${exit_video_url ? `'${exit_video_url}'` : 'NULL'},
       ${entry_image ? `'${entry_image}'` : 'NULL'},
       ${crop_image ? `'${crop_image}'` : 'NULL'},
-      ${exit_image ? `'${exit_image}'` : 'NULL'},
-      ${entry_image_path ? `'${entry_image_path}'` : 'NULL'},
-      ${exit_clip_path ? `'${exit_clip_path}'` : 'NULL'},
-      ${entry_video_url ? `'${entry_video_url}'` : 'NULL'},
-      ${exit_video_url ? `'${exit_video_url}'` : 'NULL'},      
-      '${type}'
+      ${exit_image ? `'${exit_image}'` : 'NULL'}
     )
   `;
-
   return mainQuery(query);
 };
 
 exports.updateTicket = async (id, data) => {
   const {
-    camera_id,
-    spot_number,
     plate_number,
     plate_code,
     plate_city,
     confidence,
-    entry_time,
     exit_time,
     parking_duration,
-    parkonic_trip_id,
-    entry_image,
-    crop_image,
-    exit_image,
-    video_1,
-    video_2,
-    entry_image_path,
-    exit_clip_path,
-    type
   } = data;
+
+  const confidenceInt = confidence !== undefined && confidence !== null ? Number(confidence) : 'NULL';
 
   const updates = [];
 
-  if (camera_id) updates.push(`camera_id='${camera_id}'`);
-  if (spot_number) updates.push(`spot_number='${spot_number}'`);
   if (plate_number) updates.push(`plate_number='${plate_number}'`);
   if (plate_code) updates.push(`plate_code='${plate_code}'`);
   if (plate_city) updates.push(`plate_city='${plate_city}'`);
-  if (confidence !== undefined) updates.push(`confidence='${confidence}'`);
-  if (entry_time) updates.push(`entry_time='${entry_time}'`);
+  if (confidenceInt !== undefined) updates.push(`confidence='${Number(confidenceInt)}'`);
   if (exit_time) updates.push(`exit_time='${exit_time}'`);
-  if (parking_duration) updates.push(`parking_duration='${exit_time}'`);
-  if (parkonic_trip_id) updates.push(`parkonic_trip_id='${parkonic_trip_id}'`);
-  if (entry_image) updates.push(`entry_image='${entry_image}'`);
-  if (crop_image) updates.push(`crop_image='${crop_image}'`);
-  if (exit_image) updates.push(`exit_image='${exit_image}'`);
-  if (video_1) updates.push(`video_1='${video_1}'`);
-  if (video_2) updates.push(`video_2='${video_2}'`);
-  if (entry_image_path) updates.push(`entry_image_path='${entry_image_path}'`);
-  if (exit_clip_path) updates.push(`exit_clip_path='${exit_clip_path}'`);
-  if (type) updates.push(`type='${type}'`);
+  if (parking_duration) updates.push(`parking_duration='${parking_duration}'`);
 
   if (updates.length === 0) return null; // nothing to update
 
   const query = `
-    UPDATE cancelled
+    UPDATE holdtickets
     SET ${updates.join(', ')}
     WHERE id = ${id}
   `;
@@ -350,10 +318,23 @@ exports.updateTicket = async (id, data) => {
   return mainQuery(query);
 };
 
+exports.addTripId = async (id, trip_id) => {
+  const updates = [];
+  if (trip_id) updates.push(`parkonic_trip_id='${trip_id}'`);
+  if (updates.length === 0) return null; // nothing to update
+
+  const query = `
+    UPDATE holdtickets
+    SET ${updates.join(', ')}
+    WHERE id = ${id}
+  `;
+
+  return mainQuery(query);
+};
 
 exports.deleteTicket = async (id) => {
   const query = `
-    DELETE FROM cancelled
+    DELETE FROM holdtickets
     WHERE id = ${Number(id)}
   `;
 
@@ -363,7 +344,7 @@ exports.deleteTicket = async (id) => {
 exports.countTicketsByLocationAndRangeDate = async ({ location_id, start, end }) => {
   const query = `
     SELECT COUNT(*) AS total
-    FROM cancelled t
+    FROM holdtickets t
     JOIN cameras c ON t.camera_id = c.id
     JOIN poles p ON c.pole_id = p.id
     JOIN zones z ON p.zone_id = z.id
@@ -376,7 +357,7 @@ exports.countTicketsByLocationAndRangeDate = async ({ location_id, start, end })
 exports.deleteTicketRange = async ({ location_id , start, end }) => {
   const selectQuery = `
     SELECT t.entry_image, t.crop_image, t.exit_image
-    FROM cancelled t
+    FROM holdtickets t
     JOIN cameras c ON t.camera_id = c.id
     JOIN poles p ON c.pole_id = p.id
     JOIN zones z ON p.zone_id = z.id
@@ -394,7 +375,7 @@ exports.deleteTicketRange = async ({ location_id , start, end }) => {
 
   const query = `
     DELETE t
-    FROM cancelled t
+    FROM holdtickets t
     INNER JOIN cameras c ON t.camera_id = c.id
     INNER JOIN poles p ON c.pole_id = p.id
     INNER JOIN zones z ON p.zone_id = z.id
@@ -444,10 +425,9 @@ exports.getTicketsPaginateByCamera = (camera_id, perPage, offset) => {
       END AS exit_video_url,
 
       t.created_at,
-      t.updated_at,
-      t.type
+      t.updated_at
 
-    FROM cancelled t
+    FROM holdtickets t
     INNER JOIN cameras c ON c.id = t.camera_id
     WHERE t.camera_id = ${Number(camera_id)}
     ORDER BY t.id DESC
@@ -497,9 +477,8 @@ exports.getTicketsPaginateByLocation = (location_id, perPage, offset) => {
       END AS exit_video_url,
 
       t.created_at,
-      t.updated_at,
-      t.type
-    FROM cancelled t
+      t.updated_at
+    FROM holdtickets t
     INNER JOIN cameras c ON c.id = t.camera_id
     INNER JOIN poles p ON p.id = c.pole_id
     INNER JOIN zones z ON z.id = p.zone_id

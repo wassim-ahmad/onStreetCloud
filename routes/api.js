@@ -16,6 +16,7 @@ const SubmittedticketsRoutes = require("./submittedApi.js");
 const CancelledticketsRoutes = require("./cancelledApi.js");
 const SettingsRoutes = require("./settingsApi.js");
 const CameraIssuesRoutes = require("./issuesApi.js");
+const HoldticketsRoutes = require("./holdingticketsApi.js");
 
 
 router.use(authRoutes);
@@ -34,5 +35,6 @@ router.use(SubmittedticketsRoutes);
 router.use(CancelledticketsRoutes);
 router.use(SettingsRoutes);
 router.use(CameraIssuesRoutes);
+router.use(HoldticketsRoutes);
 
 module.exports = router;

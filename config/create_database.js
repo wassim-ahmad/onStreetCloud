@@ -327,6 +327,40 @@ connection.query('\
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4; \
 ');
 
+connection.query('\
+CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionDetails.holding_table + '` ( \
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT, \
+    `camera_id` INT UNSIGNED NOT NULL, \
+    `parkonic_token` LONGTEXT NULL, \
+    `spot_number` INT NOT NULL, \
+    `camera_ip` VARCHAR(255) NOT NULL, \
+    `plate_number` VARCHAR(20) NULL, \
+    `plate_code` VARCHAR(10) NULL, \
+    `plate_city` VARCHAR(50) NULL, \
+    `status` VARCHAR(50) NULL, \
+    `zone_name` VARCHAR(255) NULL, \
+    `zone_region` VARCHAR(255) NULL, \
+    `confidence` INT NULL, \
+    `entry_time` DATETIME NOT NULL, \
+    `exit_time` DATETIME NULL, \
+    `parking_duration` VARCHAR(255) NULL, \
+    `parkonic_trip_id` INT NULL, \
+    `entry_image` LONGTEXT NULL, \
+    `crop_image` LONGTEXT NULL, \
+    `exit_image` LONGTEXT NULL, \
+    `entry_image_path` VARCHAR(255) NULL, \
+    `exit_clip_path` VARCHAR(255) NULL, \
+    `entry_video_url` VARCHAR(255) NULL, \
+    `exit_video_url` VARCHAR(255) NULL, \
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, \
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
+    PRIMARY KEY (`id`), \
+    INDEX `camera_id_idx` (`camera_id`), \
+    CONSTRAINT `fk_holding_events_cameras` FOREIGN KEY (`camera_id`) \
+        REFERENCES `' + connectionDetails.database + '`.`' + connectionDetails.cameras_table + '`(`id`) \
+        ON DELETE CASCADE \
+)');
+
 
 
 connection.query('USE ' + connectionDetails.database);
@@ -429,6 +463,13 @@ connection.query(insertQuery,['View Issues', 'view_issue', 'users can view issue
 connection.query(insertQuery,['Create Issues', 'create_issue', 'users can create issues']);
 connection.query(insertQuery,['Resolve Issues', 'resolve_issue', 'users can resolve issues']);
 
+connection.query(insertQuery,['View holding Tickets', 'view_hold_ticket', 'users can view holding tickets']);
+connection.query(insertQuery,['Create holding Ticket', 'create_hold_ticket', 'users can create holding tickets']);
+connection.query(insertQuery,['Edit holding Ticket', 'edit_hold_ticket', 'users can edit holding tickets']);
+connection.query(insertQuery,['Delete holding Ticket', 'delete_hold_ticket', 'users can delete holding tickets']);
+connection.query(insertQuery,['Cancel holding Ticket', 'cancel_hold_ticket', 'users can cancel holding tickets']);
+connection.query(insertQuery,['Submit holding Ticket', 'submit_hold_ticket', 'users can submit holding tickets']);
+
 var insertQuery = "INSERT INTO user_permissions (user_id, permission_id) VALUES (?,?)";
 connection.query(insertQuery,[1, 1]);
 connection.query(insertQuery,[1, 2]);
@@ -482,6 +523,12 @@ connection.query(insertQuery,[1, 49]);
 connection.query(insertQuery,[1, 50]);
 connection.query(insertQuery,[1, 51]);
 connection.query(insertQuery,[1, 52]);
+connection.query(insertQuery,[1, 53]);
+connection.query(insertQuery,[1, 54]);
+connection.query(insertQuery,[1, 55]);
+connection.query(insertQuery,[1, 56]);
+connection.query(insertQuery,[1, 57]);
+connection.query(insertQuery,[1, 58]);
 
 var insertQuery = "INSERT INTO settings (`name`, `value`) VALUES (?,?)";
 connection.query(insertQuery,['ticket_allowed_ips','["192.168.1.10","10.0.0.5"]']);
