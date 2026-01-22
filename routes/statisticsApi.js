@@ -12,6 +12,7 @@ const ticketModel = require('../models/Ticket');
 const omcticketModel = require('../models/Omcticket');
 const cancelledTicketsModel = require('../models/Cancelledticket');
 const submittedTicketsModel = require('../models/Submittedticket');
+const holdticketModel = require('../models/Holdingticket');
 const Pagination = require('../utils/pagination');
 const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
@@ -27,6 +28,7 @@ router.get('/statistics', verifyToken, allowedTicketIPs, async (req, res) => {
     const onlineCamerasCount = await allOnlineCameras().length;
     const OcrTicketsCount = await ticketModel.getTicketsTotalCount();
     const OmcTicketsCount = await omcticketModel.getTicketsTotalCount();
+    const HoldTicketsCount = await holdticketModel.getTicketsTotalCount();
     const cancelledTicketsCount = await cancelledTicketsModel.getTicketsTotalCount();
     const submittedTicketsCount = await submittedTicketsModel.getTicketsTotalCount();
 
@@ -55,6 +57,7 @@ router.get('/statistics', verifyToken, allowedTicketIPs, async (req, res) => {
         tickets:{
             ocr: OcrTicketsCount,
             omc: OmcTicketsCount,
+            Hold: HoldTicketsCount,
             cancelled: cancelledTicketsCount, 
             submitted: submittedTicketsCount,
         }
