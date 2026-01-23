@@ -5,8 +5,15 @@ const multer = require("multer");
 const upload = multer();
 const { verifyToken } = require('../config/auth');
 const settingsModel = require('../models/Setting');
+const submittedTicketsModel = require('../models/Submittedticket');
 const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
+
+
+const path = require('path');
+const fs = require('fs-extra');
+const ExcelJS = require('exceljs');
+const archiver = require('archiver');
 
 router.get(
   '/settings/all',
@@ -117,6 +124,159 @@ router.put(
     }
   }
 );
+
+router.post(
+  '/archive-tickets/:location_id',
+  verifyToken,
+  requirePermission('restore_location'),
+  upload.none(),
+  async (req, res) => {
+    let tempDir = null;
+
+    try {
+      const location_id = Number(req.params.location_id);
+      const { start, end } = req.body;
+
+      if (!start || !end) {
+        return res.status(400).send('start and end required');
+      }
+
+      // 1️⃣ Get tickets
+      const tickets = await submittedTicketsModel.getTicketsForArchiveByLocation({
+        location_id,
+        start,
+        end
+      });
+
+      if (!tickets.length) {
+        return res.status(404).send('No tickets found');
+      }
+
+      // 2️⃣ Create temp folder
+      tempDir = path.join(__dirname, `../temp_archive_${Date.now()}`);
+      const imagesDir = path.join(tempDir, 'images');
+      await fs.ensureDir(imagesDir);
+
+      // 3️⃣ Copy images
+      for (const t of tickets) {
+        if (t.entry_image && fs.existsSync(t.entry_image)) {
+          await fs.copy(
+            t.entry_image,
+            path.join(imagesDir, path.basename(t.entry_image))
+          );
+        }
+        if (t.crop_image && fs.existsSync(t.crop_image)) {
+          await fs.copy(
+            t.crop_image,
+            path.join(imagesDir, path.basename(t.crop_image))
+          );
+        }
+        if (t.exit_image && fs.existsSync(t.exit_image)) {
+          await fs.copy(
+            t.exit_image,
+            path.join(imagesDir, path.basename(t.exit_image))
+          );
+        }
+      }
+
+      // 4️⃣ Create Excel
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Tickets');
+
+      sheet.columns = Object.keys(tickets[0]).map(key => ({
+        header: key.toUpperCase(),
+        key,
+        width: 25
+      }));
+
+      tickets.forEach(t => {
+        const row = { ...t };
+
+        if (t.entry_image) {
+          const name = path.basename(t.entry_image);
+          row.entry_image = {
+            text: name,
+            hyperlink: `./images/${name}`
+          };
+        }
+
+        if (t.crop_image) {
+          const name = path.basename(t.crop_image);
+          row.crop_image = {
+            text: name,
+            hyperlink: `./images/${name}`
+          };
+        }
+
+        if (t.exit_image) {
+          const name = path.basename(t.exit_image);
+          row.exit_image = {
+            text: name,
+            hyperlink: `./images/${name}`
+          };
+        }
+
+        sheet.addRow(row);
+      });
+
+      await workbook.xlsx.writeFile(
+        path.join(tempDir, 'tickets.xlsx')
+      );
+
+      // 5️⃣ Stream ZIP to browser
+      const zipName = `tickets_archive_${location_id}_${Date.now()}.zip`;
+
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${zipName}"`
+      );
+      res.setHeader('Content-Type', 'application/zip');
+
+      const archive = archiver('zip', { zlib: { level: 9 } });
+
+      archive.on('error', err => {
+        console.error('Archive error:', err);
+        res.status(500).end();
+      });
+
+      archive.pipe(res);
+      archive.directory(tempDir, false);
+      archive.finalize();
+
+      // ✅ DELETE ONLY AFTER ZIP IS FULLY SENT
+      res.on('finish', async () => {
+        try {
+          console.log('ZIP sent successfully. Deleting tickets...');
+
+          await submittedTicketsModel.deleteTicketRange({
+            location_id,
+            start,
+            end
+          });
+
+          await fs.remove(tempDir);
+
+          console.log('Tickets and images deleted safely.');
+        } catch (err) {
+          console.error('Cleanup failed:', err);
+        }
+      });
+
+    } catch (err) {
+      console.error(err);
+
+      // cleanup temp folder if something failed early
+      if (tempDir) {
+        try { await fs.remove(tempDir); } catch (_) {}
+      }
+
+      res.status(500).send('Archive failed');
+    }
+  }
+);
+
+
+
 
 
 module.exports = router;

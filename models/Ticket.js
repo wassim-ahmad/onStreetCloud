@@ -600,3 +600,9 @@ exports.getTicketsPaginateByLocation = (location_id, perPage, offset) => {
 };
 
 
+
+
+
+
+
+

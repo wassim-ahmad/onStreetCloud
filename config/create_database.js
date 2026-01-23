@@ -450,14 +450,18 @@ connection.query(insertQuery,['Submit OMC Ticket', 'submit_omcticket', 'users ca
 
 connection.query(insertQuery,['View Submitted Tickets', 'view_submitted', 'users can view submitted tickets']);
 connection.query(insertQuery,['Delete Submitted Ticket', 'delete_submitted', 'users can delete submitted tickets']);
+connection.query(insertQuery,['Archive Submitted Ticket', 'archive_submitted', 'users can submitted archive tickets']);
+
 
 connection.query(insertQuery,['View Cancelled Tickets', 'view_cancelled', 'users can view cancelled tickets']);
 connection.query(insertQuery,['Delete Cancelled Ticket', 'delete_cancelled', 'users can delete cancelled tickets']);
+connection.query(insertQuery,['Archive Cancelled Ticket', 'archive_cancelled', 'users can archive cancelled tickets']);
+
 
 connection.query(insertQuery,['Restore User', 'restore_user', 'users can restore user']);
 
-connection.query(insertQuery,['Restore User', 'view_setting', 'users can view settings']);
-connection.query(insertQuery,['Restore User', 'edit_setting', 'users can edit settings']);
+connection.query(insertQuery,['View Settings', 'view_setting', 'users can view settings']);
+connection.query(insertQuery,['Edit settings', 'edit_setting', 'users can edit settings']);
 
 connection.query(insertQuery,['View Issues', 'view_issue', 'users can view issues']);
 connection.query(insertQuery,['Create Issues', 'create_issue', 'users can create issues']);
@@ -529,6 +533,8 @@ connection.query(insertQuery,[1, 55]);
 connection.query(insertQuery,[1, 56]);
 connection.query(insertQuery,[1, 57]);
 connection.query(insertQuery,[1, 58]);
+connection.query(insertQuery,[1, 59]);
+connection.query(insertQuery,[1, 60]);
 
 var insertQuery = "INSERT INTO settings (`name`, `value`) VALUES (?,?)";
 connection.query(insertQuery,['ticket_allowed_ips','["192.168.1.10","10.0.0.5"]']);

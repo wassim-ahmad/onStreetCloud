@@ -1,4 +1,22 @@
+const fs_promise = require('fs/promises');
+const path = require('path');
+
 var pool = require('../config/dbConnection');
+
+async function deleteImage(filePath) {
+  if (!filePath) return;
+
+  const fullPath = path.resolve(filePath);
+
+  try {
+    await fs_promise.unlink(fullPath);
+    console.log("Deleted file:", fullPath);
+  } catch (err) {
+    if (err.code !== "ENOENT") {
+      console.error("Failed to delete file:", fullPath, err);
+    }
+  }
+}
 
 // async function mainQuery(query) {
 //   const db = await connectDB();
@@ -334,6 +352,51 @@ exports.deleteTicket = async (id) => {
   return mainQuery(query);
 };
 
+exports.countTicketsByLocationAndRangeDate = async ({ location_id, start, end }) => {
+  const query = `
+    SELECT COUNT(*) AS total
+    FROM submitted t
+    JOIN cameras c ON t.camera_id = c.id
+    JOIN poles p ON c.pole_id = p.id
+    JOIN zones z ON p.zone_id = z.id
+    WHERE z.location_id = ${Number(location_id)}
+      AND t.created_at BETWEEN '${start}' AND '${end}'
+  `;
+  return mainQuery(query);
+};
+
+exports.deleteTicketRange = async ({ location_id , start, end }) => {
+  const selectQuery = `
+    SELECT t.entry_image, t.crop_image, t.exit_image
+    FROM submitted t
+    JOIN cameras c ON t.camera_id = c.id
+    JOIN poles p ON c.pole_id = p.id
+    JOIN zones z ON p.zone_id = z.id
+    WHERE z.location_id = ${Number(location_id)}
+      AND t.created_at BETWEEN '${start}' AND '${end}'
+  `;
+
+  const rows = await mainQuery(selectQuery);
+
+  for (const row of rows) {
+    await deleteImage(row.entry_image);
+    await deleteImage(row.crop_image);
+    await deleteImage(row.exit_image);
+  }
+
+  const query = `
+     DELETE t
+    FROM submitted t
+    INNER JOIN cameras c ON t.camera_id = c.id
+    INNER JOIN poles p ON c.pole_id = p.id
+    INNER JOIN zones z ON p.zone_id = z.id
+    WHERE z.location_id = ${Number(location_id)}
+      AND t.created_at BETWEEN '${start}' AND '${end}'
+  `;
+
+  return mainQuery(query);
+};
+
 exports.getTicketsPaginateByCamera = (camera_id, perPage, offset) => {
   const query = `
     SELECT
@@ -437,5 +500,61 @@ exports.getTicketsPaginateByLocation = (location_id, perPage, offset) => {
   return mainQuery(query);
 };
 
+exports.getTicketsForArchiveByLocation = async ({ location_id, start, end }) => {
+  const query = `
+    SELECT
+      t.id,
+      t.camera_id,
+      t.parkonic_token,
+      c.access_point_id,
+      t.spot_number,
+      t.camera_ip,
+      t.plate_number,
+      t.plate_code,
+      t.plate_city,
+      t.status,
+      t.zone_name,
+      t.zone_region,
+      t.confidence,
 
+      DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
+      DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+
+      t.parking_duration,
+      t.parkonic_trip_id,
+
+      t.entry_image_path,
+      t.exit_clip_path,
+      t.entry_image,
+      t.crop_image,
+      t.exit_image,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.entry_video_url
+      END AS entry_video_url,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.exit_video_url
+      END AS exit_video_url,
+
+      t.created_at,
+      t.updated_at
+
+    FROM tickets t
+    INNER JOIN cameras c ON c.id = t.camera_id
+    INNER JOIN poles p ON p.id = c.pole_id
+    INNER JOIN zones z ON z.id = p.zone_id
+
+    WHERE z.location_id = ${Number(location_id)}
+      AND t.created_at BETWEEN '${start}' AND '${end}'
+
+    ORDER BY t.id DESC
+  `;
+
+  return mainQuery(query);
+};
 

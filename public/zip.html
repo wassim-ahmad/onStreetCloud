@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Archive Tickets Test</title>
+</head>
+<body>
+
+<h3>Download Tickets Archive</h3>
+
+<label>Token:</label><br>
+<input type="text" id="token" style="width:600px"><br><br>
+
+<label>Location ID:</label><br>
+<input type="number" id="location_id" value="1"><br><br>
+
+<label>Start date:</label><br>
+<input type="date" id="start"><br><br>
+
+<label>End date:</label><br>
+<input type="date" id="end"><br><br>
+
+<button onclick="downloadZip()">Download ZIP</button>
+
+<p id="status"></p>
+
+<script>
+async function downloadZip() {
+  const token = document.getElementById('token').value;
+  const locationId = document.getElementById('location_id').value;
+  const start = document.getElementById('start').value;
+  const end = document.getElementById('end').value;
+
+  if (!token || !start || !end) {
+    alert('Missing data');
+    return;
+  }
+
+  document.getElementById('status').innerText = 'Preparing archive...';
+
+  const formData = new FormData();
+  formData.append('start', start);
+  formData.append('end', end);
+
+  const response = await fetch(`/api/archive-tickets/${locationId}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: formData
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    document.getElementById('status').innerText = 'Error: ' + text;
+    return;
+  }
+
+  const blob = await response.blob();
+
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tickets_archive_${locationId}.zip`;
+  document.body.appendChild(a);
+  a.click();
+
+  a.remove();
+  window.URL.revokeObjectURL(url);
+
+  document.getElementById('status').innerText = 'Download started ✔';
+}
+</script>
+
+</body>
+</html>

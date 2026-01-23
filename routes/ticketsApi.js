@@ -140,7 +140,7 @@ router.get(
 
       const ticket = rows[0];
 
-      logger.error('get OCR ticket by id successfully', { admin: req.user, error: err.message });
+      logger.success('get OCR ticket by id successfully', { admin: req.user, total: ticket });
       res.json({
         message: 'Ticket fetched successfully',
           ticket,
@@ -573,9 +573,10 @@ router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermiss
         in_images,
         out_images
       };
+      res.json({data:payload});
 
       // const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-      const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      // const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
 
       if (response.data.status === false){
         logger.error('OCR Ticket submission failed immigration', { admin: req.user, response:response.data });
@@ -593,6 +594,7 @@ router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermiss
 
     // --- submit ticket ---
     delete old_ticket[0].id;
+
     const submit_result = await submittedTicketsModel.createTicket(old_ticket[0]);
     if (submit_result.affectedRows === 0) throw new Error('Ticket not submitted');
 

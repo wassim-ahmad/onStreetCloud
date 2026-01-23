@@ -552,6 +552,10 @@ app.get("/index", (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
 });
 
+app.get("/zip", (req, res) => {
+  res.sendFile(__dirname + "/public/zip.html");
+});
+
 // app.get("/create-zone/:location_id", (req, res) => {
 //   res.sendFile(__dirname + "/public/createZone.html");
 // });
