@@ -551,11 +551,14 @@ router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermiss
     const old_ticket = await ticketModel.getTicketById(ticket_id);
     if (!old_ticket[0]) throw new Error('Ticket not found');
 
+    
+
     const crop_base64 = imageToBase64(old_ticket[0].crop_image || "");
     const entry_base64 = imageToBase64(old_ticket[0].entry_image || "");
-    const exit_base64 = imageToBase64(old_ticket[0].exit_image || "");
+    // const exit_base64 = imageToBase64(old_ticket[0].exit_image || "");
     const in_images = [crop_base64, entry_base64];
-    const out_images = [exit_base64];
+    // const out_images = [exit_base64];
+    const out_images = [""];
 
     // --- park-in ---
     try {

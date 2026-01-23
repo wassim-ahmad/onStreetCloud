@@ -497,19 +497,19 @@ router.post('/submit-hold-ticket/:id', upload.none(), verifyToken, requirePermis
     if (!ticket_id) throw new Error('Holding ticket ID is required and must be a number');
 
     // --- update ticket ---
-    const { number, code, city, confidence, exit_time, entry_time } = req.body;
-    const diffMs = new Date(exit_time) - new Date(entry_time);
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    const parkingDuration = `${hours}h ${minutes}m`;
+    const { number, code, city } = req.body;
+    // const diffMs = new Date(exit_time) - new Date(entry_time);
+    // const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    // const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    // const parkingDuration = `${hours}h ${minutes}m`;
 
     const updateTicketData = await holdticketModel.updateTicket(ticket_id, {
       plate_number: number || null,
       plate_code: code || null,
       plate_city: city || null,
-      confidence: confidence || null,
-      exit_time: exit_time || null,
-      parking_duration: parkingDuration || null,
+      confidence: 100,
+      // exit_time: exit_time || null,
+      // parking_duration: parkingDuration || null,
     });
 
     if (!updateTicketData) throw new Error('Nothing to update');
@@ -520,9 +520,10 @@ router.post('/submit-hold-ticket/:id', upload.none(), verifyToken, requirePermis
 
     const crop_base64 = imageToBase64(old_ticket[0].crop_image || "");
     const entry_base64 = imageToBase64(old_ticket[0].entry_image || "");
-    const exit_base64 = imageToBase64(old_ticket[0].exit_image || "");
+    // const exit_base64 = imageToBase64(old_ticket[0].exit_image || "");
     const in_images = [crop_base64, entry_base64];
-    const out_images = [exit_base64];
+    // const out_images = [exit_base64];
+    const out_images = [""];
 
     // --- park-in ---
     try {
