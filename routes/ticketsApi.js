@@ -573,7 +573,6 @@ router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermiss
         in_images,
         out_images
       };
-      res.json({data:payload});
 
       // const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
       const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
