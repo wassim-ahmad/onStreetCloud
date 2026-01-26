@@ -503,7 +503,7 @@ router.post('/submit-omc-ticket/:id', upload.none(), verifyToken, requirePermiss
     // const parkingDuration = `${hours}h ${minutes}m`;
 
 
-    
+
     const updateTicketData = await omcticketModel.updateTicket(ticket_id, {
       plate_number: number || null,
       plate_code: code || null,
@@ -518,6 +518,17 @@ router.post('/submit-omc-ticket/:id', upload.none(), verifyToken, requirePermiss
     // --- get old ticket ---
     const old_ticket = await omcticketModel.getTicketById(ticket_id);
     if (!old_ticket[0]) throw new Error('Ticket not found');
+
+    // check if entry grater than exit
+    const entryDate = new Date(old_ticket[0].entry_time);
+    const exitDate = new Date(old_ticket[0].exit_time);
+    if (isNaN(entryDate) || isNaN(exitDate)) {
+      throw new Error('Invalid date format');
+    }
+
+    if (entryDate >= exitDate) {
+      throw new Error('entry time cannot be greater than or equal exit time');
+    }
 
     const crop_base64 = imageToBase64(old_ticket[0].crop_image || "");
     const entry_base64 = imageToBase64(old_ticket[0].entry_image || "");

@@ -160,7 +160,7 @@ router.get(
 
 
 // create new ticket
-router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), allowedTicketIPs, upload.fields([
+router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), allowedTicketIPs,   upload.fields([
     { name: 'entry_image', maxCount: 1 },
     { name: 'crop_image', maxCount: 1 },
     { name: 'exit_image', maxCount: 1 }
@@ -215,7 +215,6 @@ router.post('/create-ticket', verifyToken, requirePermission("create_ticket"), a
         ticket_id: exists[0].id
       });
     }
-
 
     const entry_image = req.files?.entry_image
         ? `uploads/tickets/${req.files.entry_image[0].filename}`
@@ -551,7 +550,16 @@ router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermiss
     const old_ticket = await ticketModel.getTicketById(ticket_id);
     if (!old_ticket[0]) throw new Error('Ticket not found');
 
-    
+    // check if entry grater than exit
+    const entryDate = new Date(old_ticket[0].entry_time);
+    const exitDate = new Date(old_ticket[0].exit_time);
+    if (isNaN(entryDate) || isNaN(exitDate)) {
+      throw new Error('Invalid date format');
+    }
+
+    if (entryDate >= exitDate) {
+      throw new Error('entry time cannot be greater than or equal exit time');
+    }
 
     const crop_base64 = imageToBase64(old_ticket[0].crop_image || "");
     const entry_base64 = imageToBase64(old_ticket[0].entry_image || "");
