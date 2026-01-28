@@ -14,7 +14,7 @@ router.get('/users', verifyToken, requirePermission("view_user"), async (req, re
     logger.info("get users: ",{ admin: req.user });
     // Pagination parameters
     const page_id = parseInt(req.query.page) || 1;
-    const perPage = parseInt(req.query.perPage) || 2;
+    const perPage = parseInt(req.query.perPage) || 9;
     const offset = (page_id - 1) * perPage;
 
     // Get total count of users
