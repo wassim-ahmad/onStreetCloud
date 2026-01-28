@@ -29,7 +29,7 @@ async function deleteImage(filePath) {
 // }
 
 async function mainQuery(query) {
-  const [rows] = await pool.execute(query);
+  const [rows] = await pool.query(query);
   return rows;
 }
 

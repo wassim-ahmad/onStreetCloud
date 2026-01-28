@@ -13,7 +13,7 @@ var pool = require('../config/dbConnection');
 // }
 
 async function mainQuery(query) {
-  const [rows] = await pool.execute(query);
+  const [rows] = await pool.query(query);
   return rows;
 }
 

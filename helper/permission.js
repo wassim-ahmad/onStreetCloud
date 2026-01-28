@@ -7,7 +7,7 @@ const pool = require('../config/dbConnection');
 // }
 
 async function mainQuery(query, params = []) {
-  const [rows] = await pool.execute(query, params);
+  const [rows] = await pool.query(query, params);
   return rows;
 }
 
