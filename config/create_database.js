@@ -189,6 +189,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
     PRIMARY KEY (`id`), \
     INDEX `camera_id_idx` (`camera_id`), \
+    INDEX `idx_tickets_created_at` (`created_at`), \
     CONSTRAINT `fk_parking_events_camera` FOREIGN KEY (`camera_id`) \
         REFERENCES `' + connectionDetails.database + '`.`' + connectionDetails.cameras_table + '`(`id`) \
         ON DELETE CASCADE \
@@ -223,6 +224,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
     PRIMARY KEY (`id`), \
     INDEX `camera_id_idx` (`camera_id`), \
+    INDEX `idx_omctickets_created_at` (`created_at`), \
     CONSTRAINT `fk_parking_events_cameras` FOREIGN KEY (`camera_id`) \
         REFERENCES `' + connectionDetails.database + '`.`' + connectionDetails.cameras_table + '`(`id`) \
         ON DELETE CASCADE \
@@ -356,6 +358,7 @@ CREATE TABLE IF NOT EXISTS `' + connectionDetails.database + '`.`' + connectionD
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, \
     PRIMARY KEY (`id`), \
     INDEX `camera_id_idx` (`camera_id`), \
+    INDEX `idx_holdtickets_created_at` (`created_at`), \
     CONSTRAINT `fk_holding_events_cameras` FOREIGN KEY (`camera_id`) \
         REFERENCES `' + connectionDetails.database + '`.`' + connectionDetails.cameras_table + '`(`id`) \
         ON DELETE CASCADE \

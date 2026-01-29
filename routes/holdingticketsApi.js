@@ -88,16 +88,52 @@ router.get('/hold-tickets', verifyToken, requirePermission("view_hold_ticket"), 
 
     const Paginate = new Pagination(totalCount, currentPage, pageUri, perPage);
     const ticketsPaginate = await holdticketModel.getTicketsPaginate(perPage, offset);
+    const stats = await holdticketModel.getTicketsStats();
 
     logger.success("get holding tickets successfully", { admin: req.user, total: totalCount });
     res.json({
       message: 'Holding tickets fetched successfully',
       total: totalCount,
+      stats: stats[0],
       data: ticketsPaginate,
       links: Paginate.links()
     });
   } catch (err) {
     logger.error('get holding tickets paginate failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err });
+  }
+});
+
+// get hold tickets by based time by hours
+router.get('/hold-tickets/:hours', verifyToken, requirePermission("view_hold_ticket"), allowedTicketIPs, async (req, res) => {
+  try {
+    const hours = req.params.hours;
+
+    logger.info("get hold tickets based time by hours:", { admin: req.user });
+
+    const page_id = parseInt(req.query.page) || 1;
+    const currentPage = page_id;
+    const pageUri = '/hold-tickets/'+hours;
+    const perPage = parseInt(req.query.perPage) || 9;
+
+    const totalCount = await holdticketModel.getTicketsTotalCountByHours(hours);
+    const offset = (page_id - 1) * perPage;
+
+    const Paginate = new Pagination(totalCount, currentPage, pageUri, perPage);
+    const ticketsPaginate = await holdticketModel.getTicketsPaginateByHours(hours, perPage, offset);
+    const stats = await holdticketModel.getTicketsStats();
+
+    logger.success("get hold tickets based time by hours successfully", { admin: req.user, total: totalCount });
+    res.json({
+      message: 'Hold tickets based time by hours fetched successfully',
+      total: totalCount,
+      stats:stats[0],
+      data: ticketsPaginate,
+      links: Paginate.links()
+    });
+  } catch (err) {
+    logger.error('get hold tickets based time by hours paginate failed', { admin: req.user, error: err.message });
     console.error(err);
     res.status(500).json({ message: 'Database error', error: err });
   }
@@ -553,8 +589,8 @@ router.post('/submit-hold-ticket/:id', upload.none(), verifyToken, requirePermis
         out_images
       };
 
-      // const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-      const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      // const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
 
       if (response.data.status === false){
         logger.error('Holding Ticket submission failed immigration', { admin: req.user, response:response.data });

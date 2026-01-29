@@ -87,16 +87,53 @@ router.get('/omc-tickets', verifyToken, requirePermission("view_omcticket"), all
 
     const Paginate = new Pagination(totalCount, currentPage, pageUri, perPage);
     const ticketsPaginate = await omcticketModel.getTicketsPaginate(perPage, offset);
+    const stats = await omcticketModel.getTicketsStats();
 
     logger.success("get omc tickets successfully", { admin: req.user, total: totalCount });
     res.json({
       message: 'Tickets fetched successfully',
       total: totalCount,
+      stats:stats[0],
       data: ticketsPaginate,
       links: Paginate.links()
     });
   } catch (err) {
     logger.error('get omc tickets paginate failed', { admin: req.user, error: err.message });
+    console.error(err);
+    res.status(500).json({ message: 'Database error', error: err });
+  }
+});
+
+
+// get omc tickets by based time by hours
+router.get('/omc-tickets/:hours', verifyToken, requirePermission("view_omcticket"), allowedTicketIPs, async (req, res) => {
+  try {
+    const hours = req.params.hours;
+
+    logger.info("get omc tickets based time by hours:", { admin: req.user });
+
+    const page_id = parseInt(req.query.page) || 1;
+    const currentPage = page_id;
+    const pageUri = '/omc-tickets/'+hours;
+    const perPage = parseInt(req.query.perPage) || 9;
+
+    const totalCount = await omcticketModel.getTicketsTotalCountByHours(hours);
+    const offset = (page_id - 1) * perPage;
+
+    const Paginate = new Pagination(totalCount, currentPage, pageUri, perPage);
+    const ticketsPaginate = await omcticketModel.getTicketsPaginateByHours(hours, perPage, offset);
+    const stats = await omcticketModel.getTicketsStats();
+
+    logger.success("get omc tickets based time by hours successfully", { admin: req.user, total: totalCount });
+    res.json({
+      message: 'OMC tickets based time by hours fetched successfully',
+      total: totalCount,
+      stats:stats[0],
+      data: ticketsPaginate,
+      links: Paginate.links()
+    });
+  } catch (err) {
+    logger.error('get omc tickets based time by hours paginate failed', { admin: req.user, error: err.message });
     console.error(err);
     res.status(500).json({ message: 'Database error', error: err });
   }
@@ -554,8 +591,8 @@ router.post('/submit-omc-ticket/:id', upload.none(), verifyToken, requirePermiss
         out_images
       };
 
-      // const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-      const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      // const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
 
       if (response.data.status === false){
         logger.error('OMC Ticket submission failed immigration', { admin: req.user, response:response.data });

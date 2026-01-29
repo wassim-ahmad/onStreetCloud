@@ -109,7 +109,33 @@ exports.getTickets = () => {
   return mainQuery(query);
 };
 
-exports.getTicketsPaginate = (perPage, offset) => {
+exports.getTicketsStats = async () => {
+  const query = `
+    SELECT
+      COALESCE(SUM(created_at >= NOW() - INTERVAL 1 HOUR), 0)  AS last_1h,
+
+      COALESCE(SUM(
+        created_at <  NOW() - INTERVAL 1 HOUR
+        AND created_at >= NOW() - INTERVAL 2 HOUR
+      ), 0) AS last_2h,
+
+      COALESCE(SUM(
+        created_at <  NOW() - INTERVAL 2 HOUR
+        AND created_at >= NOW() - INTERVAL 4 HOUR
+      ), 0) AS last_4h,
+
+      COALESCE(SUM(
+        created_at <  NOW() - INTERVAL 4 HOUR
+        AND created_at >= NOW() - INTERVAL 24 HOUR
+      ), 0) AS last_24h
+    FROM tickets;
+  `;
+
+  return mainQuery(query);
+};
+
+
+exports.getTicketsPaginate = async (perPage, offset) => {
   const query = `
     SELECT
       t.id,
@@ -152,12 +178,16 @@ exports.getTicketsPaginate = (perPage, offset) => {
     FROM tickets t
     INNER JOIN cameras c ON c.id = t.camera_id
     ORDER BY t.id DESC
-    LIMIT ${perPage} OFFSET ${offset};
+    LIMIT ? OFFSET ?;
   `;
+    // LIMIT ${perPage} OFFSET ${offset};
 
-  
-  return mainQuery(query);
+  const [rows] = await pool.query(query, [perPage, offset]);
+  return rows;
+  // return mainQuery(query);
 };
+
+
 
 // exports.getTicketById = (ticket_id) => {
 //   const query = `
@@ -598,6 +628,95 @@ exports.getTicketsPaginateByLocation = (location_id, perPage, offset) => {
   `;
   return mainQuery(query);
 };
+
+exports.getTicketsTotalCountByHours = async (hours) => {
+  const query = `
+    SELECT
+      COALESCE(COUNT(*), 0) AS totalCount
+    FROM tickets
+    WHERE
+      (
+        (? = 1  AND created_at >= NOW() - INTERVAL 1 HOUR)
+        OR
+        (? = 2  AND created_at <  NOW() - INTERVAL 1 HOUR
+                 AND created_at >= NOW() - INTERVAL 2 HOUR)
+        OR
+        (? = 4  AND created_at <  NOW() - INTERVAL 2 HOUR
+                 AND created_at >= NOW() - INTERVAL 4 HOUR)
+        OR
+        (? = 24 AND created_at <  NOW() - INTERVAL 4 HOUR
+                 AND created_at >= NOW() - INTERVAL 24 HOUR)
+      );
+  `;
+
+  const [rows] = await pool.query(query, [hours, hours, hours, hours]);
+  return rows[0]?.totalCount || 0;
+};
+
+exports.getTicketsPaginateByHours = async (hours, perPage, offset) => {
+  const query = `
+    SELECT
+      t.id,
+      t.camera_id,
+      t.parkonic_token,
+      c.access_point_id,
+      t.spot_number,
+      t.camera_ip,
+      t.plate_number,
+      t.plate_code,
+      t.plate_city,
+      t.status,
+      t.zone_name,
+      t.zone_region,
+      t.confidence,
+      DATE_FORMAT(t.entry_time, '%Y-%m-%d %H:%i:%s') AS entry_time,
+      DATE_FORMAT(t.exit_time, '%Y-%m-%d %H:%i:%s') AS exit_time,
+      t.parking_duration,
+      t.parkonic_trip_id,
+      t.entry_image_path,
+      t.exit_clip_path,
+      t.entry_image,
+      t.crop_image,
+      t.exit_image,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.entry_video_url
+      END AS entry_video_url,
+
+      CASE
+        WHEN TIMESTAMPDIFF(HOUR, t.created_at, NOW()) > 24
+        THEN 'EXPIRED'
+        ELSE t.exit_video_url
+      END AS exit_video_url,
+
+      t.created_at,
+      t.updated_at
+    FROM tickets t
+    INNER JOIN cameras c ON c.id = t.camera_id
+    WHERE
+      (
+        (? = 1  AND t.created_at >= NOW() - INTERVAL 1 HOUR)
+        OR
+        (? = 2  AND t.created_at <  NOW() - INTERVAL 1 HOUR
+                 AND t.created_at >= NOW() - INTERVAL 2 HOUR)
+        OR
+        (? = 4  AND t.created_at <  NOW() - INTERVAL 2 HOUR
+                 AND t.created_at >= NOW() - INTERVAL 4 HOUR)
+        OR
+        (? = 24 AND t.created_at <  NOW() - INTERVAL 4 HOUR
+                 AND t.created_at >= NOW() - INTERVAL 24 HOUR)
+      )
+    ORDER BY t.id DESC
+    LIMIT ? OFFSET ?;
+  `;
+
+  const params = [hours, hours, hours, hours, perPage, offset];
+  const [rows] = await pool.query(query, params);
+  return rows;
+};
+
 
 
 
