@@ -103,7 +103,7 @@ exports.getTickets = () => {
       t.updated_at
     FROM omctickets t
     INNER JOIN cameras c ON c.id = t.camera_id
-    ORDER BY t.id DESC
+    ORDER BY t.id ASC
   `;
   
   return mainQuery(query);
@@ -176,7 +176,7 @@ exports.getTicketsPaginate = async (perPage, offset) => {
       t.updated_at
     FROM omctickets t
     INNER JOIN cameras c ON c.id = t.camera_id
-    ORDER BY t.id DESC
+    ORDER BY t.id ASC
     LIMIT ? OFFSET ?;
   `;
 
@@ -459,7 +459,7 @@ exports.getTicketsPaginateByCamera = (camera_id, perPage, offset) => {
     FROM omctickets t
     INNER JOIN cameras c ON c.id = t.camera_id
     WHERE t.camera_id = ${Number(camera_id)}
-    ORDER BY t.id DESC
+    ORDER BY t.id ASC
     LIMIT ${Number(perPage)} OFFSET ${Number(offset)};
   `;
 
@@ -512,7 +512,7 @@ exports.getTicketsPaginateByLocation = (location_id, perPage, offset) => {
     INNER JOIN poles p ON p.id = c.pole_id
     INNER JOIN zones z ON z.id = p.zone_id
     WHERE z.location_id = ${Number(location_id)}
-    ORDER BY t.id DESC
+    ORDER BY t.id ASC
     LIMIT ${Number(perPage)} OFFSET ${Number(offset)};
   `;
   return mainQuery(query);
@@ -597,7 +597,7 @@ exports.getTicketsPaginateByHours = async (hours, perPage, offset) => {
         (? = 24 AND t.created_at <  NOW() - INTERVAL 4 HOUR
                  AND t.created_at >= NOW() - INTERVAL 24 HOUR)
       )
-    ORDER BY t.id DESC
+    ORDER BY t.id ASC
     LIMIT ? OFFSET ?;
   `;
 
