@@ -8,6 +8,7 @@ const settingsModel = require('../models/Setting');
 const submittedTicketsModel = require('../models/Submittedticket');
 const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
+const moment = require('moment');
 
 
 const path = require('path');
@@ -274,6 +275,94 @@ router.post(
     }
   }
 );
+
+router.get(
+  '/tickets/duplicates/groups',
+  verifyToken,
+  // requirePermission('view_duplicate_tickets'),
+  async (req, res) => {
+    try {
+      logger.info('get duplicated ticket groups.', { admin: req.user });
+
+      const groups = await settingsModel.getDuplicateTicketGroupsAllSources();
+
+      logger.success('get duplicated ticket groups successfully.', {
+        admin: req.user
+      });
+
+      res.json({
+        message: 'Duplicate ticket groups fetched successfully',
+        data: groups
+      });
+    } catch (err) {
+      logger.error('get duplicated ticket groups failed.', {
+        admin: req.user,
+        error: err.message
+      });
+
+      console.error(err);
+      res.status(500).json({
+        message: 'Database error',
+        error: err
+      });
+    }
+  }
+);
+
+router.get(
+  '/tickets/duplicates/details',
+  verifyToken,
+  // requirePermission('view_duplicate_tickets'),
+  async (req, res) => {
+    try {
+      const { plate_number, location_id, first_entry_time } = req.query;
+
+      if (!plate_number || !location_id || !first_entry_time) {
+        return res.status(400).json({
+          message:
+            'plate_number, location_id, and first_entry_time are required'
+        });
+      }
+
+      const normalizedTime = new Date(first_entry_time)
+        .toISOString()
+        .slice(0, 19)
+        .replace('T', ' ');
+
+        console.log(normalizedTime);
+
+      logger.info('get duplicated ticket details.', {
+        admin: req.user,
+        plate_number,
+        location_id,
+        normalizedTime
+      });
+
+      const tickets =
+        await settingsModel.getDuplicateTicketsGroupDetailsAllSources(
+          plate_number,
+          location_id,
+          normalizedTime
+        );
+
+      res.json({
+        message: 'Duplicate tickets fetched successfully',
+        data: tickets
+      });
+    } catch (err) {
+      logger.error('get duplicated ticket details failed.', {
+        admin: req.user,
+        error: err.message
+      });
+
+      res.status(500).json({
+        message: 'Database error',
+        error: err
+      });
+    }
+  }
+);
+
 
 
 

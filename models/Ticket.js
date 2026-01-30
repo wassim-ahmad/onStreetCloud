@@ -717,7 +717,35 @@ exports.getTicketsPaginateByHours = async (hours, perPage, offset) => {
   return rows;
 };
 
+exports.getDuplicateTicketGroups = async () => {
+  const query = `
+    SELECT
+      t.plate_number,
+      l.id AS location_id,
+      l.name AS location_name,
 
+      MIN(t.entry_time) AS first_entry_time,
+      MAX(t.entry_time) AS last_entry_time,
+
+      COUNT(*) AS duplicate_count
+    FROM tickets t
+    INNER JOIN cameras c ON c.id = t.camera_id
+    INNER JOIN poles p ON p.id = c.pole_id
+    INNER JOIN zones z ON z.id = p.zone_id
+    INNER JOIN locations l ON l.id = z.location_id
+
+    GROUP BY
+      t.plate_number,
+      l.id,
+      FLOOR(UNIX_TIMESTAMP(t.entry_time) / (15 * 60))
+
+    HAVING COUNT(*) > 1
+    ORDER BY last_entry_time DESC;
+  `;
+
+  const [rows] = await pool.query(query);
+  return rows;
+};
 
 
 
