@@ -98,6 +98,7 @@ async function getAllCamerasWithStatus() {
     dev.status = isOnline ? 1 : 0;
     return dev;
   });
+
 }
 // async function excecuteCameraBySocket(integration_data) {
 //   io.to(integration_data.data.pole_code).emit('execute_camera',integration_data);
@@ -200,7 +201,18 @@ async function getStatisticsCameras(){
   }
 }
 
-module.exports = { getDevicesWithStatus,getCamerasWithStatus, excecuteCameraBySocket, syncCameraBySocket,getAllCamerasWithStatus, fetchAllDevicesFromDB };
+async function getStatisticsTickets(key, value) {
+  io.emit("showStatisticsTickets", {
+    tickets: {
+      [key]: value
+    }
+  });
+}
+
+module.exports = {
+  getDevicesWithStatus,getCamerasWithStatus, excecuteCameraBySocket, syncCameraBySocket,getAllCamerasWithStatus,
+  fetchAllDevicesFromDB, getStatisticsTickets
+};
 
 // Routes
 const apiRoutes = require('./routes/api');

@@ -16,7 +16,8 @@ const axios = require('axios');
 const { requirePermission } = require("../middleware/permission_middleware");
 var pool = require('../config/dbConnection');
 const allowedTicketIPs = require("../middleware/allowTicketIps");
-const { holding_table } = require('../config/db_config');
+// const { holding_table } = require('../config/db_config');
+const { getStatisticsTickets } = require('../app');
 
 function imageToBase64(path) {
   if (!path) {
@@ -589,8 +590,8 @@ router.post('/submit-hold-ticket/:id', upload.none(), verifyToken, requirePermis
         out_images
       };
 
-      const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-      // const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      // const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
 
       if (response.data.status === false){
         logger.error('Holding Ticket submission failed immigration', { admin: req.user, response:response.data });

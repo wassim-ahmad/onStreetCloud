@@ -324,25 +324,30 @@ router.get(
         });
       }
 
-      const normalizedTime = new Date(first_entry_time)
-        .toISOString()
-        .slice(0, 19)
-        .replace('T', ' ');
+     const firstEntryUtc = new Date(first_entry_time);
 
-        console.log(normalizedTime);
+// Convert UTC → Dubai local time (+4 hours)
+const dbTime = new Date(firstEntryUtc.getTime() + 4*60*60*1000)
+  .toISOString()
+  .slice(0,19)
+  .replace('T',' ');  // "2025-12-10 13:48:05"
+
+console.log('DB normalized time:', dbTime);
+
+
 
       logger.info('get duplicated ticket details.', {
         admin: req.user,
         plate_number,
         location_id,
-        normalizedTime
+        dbTime
       });
 
       const tickets =
         await settingsModel.getDuplicateTicketsGroupDetailsAllSources(
           plate_number,
           location_id,
-          normalizedTime
+          dbTime
         );
 
       res.json({

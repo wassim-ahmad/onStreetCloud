@@ -7,6 +7,7 @@ const submittedTicketsModel = require('../models/Submittedticket');
 const Pagination = require('../utils/pagination');
 const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
+const { getStatisticsTickets } = require('../app');
 
 // get all submitted tickets without paginate
 router.get('/submitted-tickets-all', verifyToken, requirePermission("view_submitted"), async (req, res) => {

@@ -7,6 +7,7 @@ const cancelledTicketsModel = require('../models/Cancelledticket');
 const Pagination = require('../utils/pagination');
 const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
+const { getStatisticsTickets } = require('../app');
 
 // get all cancelled tickets without paginate
 router.get('/cancelled-tickets-all', verifyToken, requirePermission("view_cancelled"), async (req, res) => {

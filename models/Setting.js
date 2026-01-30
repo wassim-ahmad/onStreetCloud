@@ -144,9 +144,9 @@ exports.getDuplicateTicketGroupsAllSources = async () => {
 exports.getDuplicateTicketsGroupDetailsAllSources = async (
   plateNumber,
   locationId,
-  first_entry_time
+  dbTime
 ) => {
-  console.log(first_entry_time , '========================');
+  console.log(dbTime , '========================');
   const query = `
     SELECT
       u.id,
@@ -192,8 +192,8 @@ exports.getDuplicateTicketsGroupDetailsAllSources = async (
   const [rows] = await pool.query(query, [
     plateNumber,
     locationId,
-    first_entry_time,
-    first_entry_time
+    dbTime,
+    dbTime
   ]);
 
   return rows;
