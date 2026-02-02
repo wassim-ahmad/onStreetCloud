@@ -327,7 +327,8 @@ router.get(
      const firstEntryUtc = new Date(first_entry_time);
 
 // Convert UTC → Dubai local time (+4 hours)
-const dbTime = new Date(firstEntryUtc.getTime() + 4*60*60*1000)
+// const dbTime = new Date(firstEntryUtc.getTime() + 4*60*60*1000)
+const dbTime = new Date(firstEntryUtc.getTime())
   .toISOString()
   .slice(0,19)
   .replace('T',' ');  // "2025-12-10 13:48:05"

@@ -146,7 +146,6 @@ exports.getDuplicateTicketsGroupDetailsAllSources = async (
   locationId,
   dbTime
 ) => {
-  console.log(dbTime , '========================');
     const query = `
     SELECT
       u.id,
