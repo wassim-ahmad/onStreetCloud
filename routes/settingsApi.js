@@ -368,6 +368,78 @@ console.log('DB normalized time:', dbTime);
   }
 );
 
+// delete tickets by type and id
+router.delete(
+  '/delete-tickets/:type/:id',
+  verifyToken,
+  requirePermission('delete_ticket'),
+  async (req, res) => {
+    try {
+      const { id, type } = req.params;
+      const ticketId = parseInt(id, 10);
+
+      if (!ticketId) {
+        return res.status(400).json({
+          message: 'Ticket ID must be a valid number'
+        });
+      }
+
+      if (!['ocr', 'omc', 'hold'].includes(type)) {
+        return res.status(400).json({
+          message: 'Invalid ticket type'
+        });
+      }
+
+      logger.info('delete ticket by type', {
+        admin: req.user,
+        ticket_id: ticketId,
+        type
+      });
+
+      // 1️⃣ Get ticket (to delete files if exist)
+      const tickets = await settingsModel.getTicketByIdAndType(ticketId, type);
+      const ticket = tickets[0];
+
+      if (!ticket) {
+        return res.status(404).json({ message: 'Ticket not found' });
+      }
+
+      // 2️⃣ Delete images if they exist (OCR mostly)
+      if (ticket.entry_image) await deleteFile(ticket.entry_image);
+      if (ticket.crop_image) await deleteFile(ticket.crop_image);
+      if (ticket.exit_image) await deleteFile(ticket.exit_image);
+
+      // 3️⃣ Delete ticket from correct table
+      const result = await settingsModel.deleteTicketByType(ticketId, type);
+
+      logger.success('delete ticket successfully', {
+        admin: req.user,
+        ticket_id: ticketId,
+        type
+      });
+
+      res.json({
+        message: 'Ticket deleted successfully',
+        id: ticketId,
+        type,
+        affectedRows: result.affectedRows
+      });
+
+    } catch (err) {
+      logger.error('delete ticket failed', {
+        admin: req.user,
+        error: err.message
+      });
+
+      res.status(500).json({
+        message: 'Database error',
+        error: err.message
+      });
+    }
+  }
+);
+
+
 
 
 

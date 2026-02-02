@@ -208,6 +208,7 @@ async function getStatisticsTickets(key, value) {
     }
   });
 }
+// i need another functions for each ticket type by hours socket to view tickets 1,2,4 and 24 hours realtime
 
 module.exports = {
   getDevicesWithStatus,getCamerasWithStatus, excecuteCameraBySocket, syncCameraBySocket,getAllCamerasWithStatus,

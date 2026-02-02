@@ -112,7 +112,7 @@ router.get('/tickets/:hours', verifyToken, requirePermission("view_ticket"), all
 
     logger.info("get tickets based time by hours:", { admin: req.user });
 
-    const page_id = parseInt(req.query.page) || 1;
+    const page_id = parseInt(req.query.page) || 1; 
     const currentPage = page_id;
     const pageUri = '/tickets/'+hours;
     const perPage = parseInt(req.query.perPage) || 9;
@@ -123,7 +123,7 @@ router.get('/tickets/:hours', verifyToken, requirePermission("view_ticket"), all
     const Paginate = new Pagination(totalCount, currentPage, pageUri, perPage);
     const ticketsPaginate = await ticketModel.getTicketsPaginateByHours(hours, perPage, offset);
     const stats = await ticketModel.getTicketsStats();
-  
+    
     logger.success("get tickets based time by hours successfully", { admin: req.user, total: totalCount });
     res.json({
       message: 'Tickets based time by hours fetched successfully',
@@ -622,8 +622,8 @@ router.post('/submit-ocr-ticket/:id', upload.none(), verifyToken, requirePermiss
         out_images
       };
 
-      // const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
-      const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      const response = await axios.post('https://dev.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
+      // const response = await axios.post('https://api.parkonic.com/api/street-parking/v2/new-trip', payload, { headers: { 'Content-Type': 'application/json' }, timeout: 10000 });
 
       if (response.data.status === false){
         logger.error('OCR Ticket submission failed immigration', { admin: req.user, response:response.data });
