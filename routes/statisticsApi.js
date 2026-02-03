@@ -13,6 +13,7 @@ const omcticketModel = require('../models/Omcticket');
 const cancelledTicketsModel = require('../models/Cancelledticket');
 const submittedTicketsModel = require('../models/Submittedticket');
 const holdticketModel = require('../models/Holdingticket');
+const settingsModel = require('../models/Setting');
 const Pagination = require('../utils/pagination');
 const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
@@ -31,6 +32,7 @@ router.get('/statistics', verifyToken, allowedTicketIPs, async (req, res) => {
     const HoldTicketsCount = await holdticketModel.getTicketsTotalCount();
     const cancelledTicketsCount = await cancelledTicketsModel.getTicketsTotalCount();
     const submittedTicketsCount = await submittedTicketsModel.getTicketsTotalCount();
+    const duplicated = await settingsModel.getDuplicateTicketGroupsAllSources();
 
     const totalLocationsCount = await locationModel.getLocationsTotalCount();
     const totalZonesCount = await zoneModel.getZonesTotalCount();
@@ -60,6 +62,7 @@ router.get('/statistics', verifyToken, allowedTicketIPs, async (req, res) => {
             Hold: HoldTicketsCount,
             cancelled: cancelledTicketsCount, 
             submitted: submittedTicketsCount,
+            duplicated: duplicated.length,
         }
     }
 );
