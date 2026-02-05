@@ -380,6 +380,7 @@ router.get('/camera-last-report/:zone_name', verifyToken, requirePermission("las
     logger.info("camera last report by zone_name: ",{ admin: req.user, body: req.params });
     const zone_name = req.params.zone_name;
     const old_record = await cameraModel.getCameraByZoneName(zone_name);
+    console.log(old_record[0].last_report,'================================',new Date(Date.now()).toISOString().slice(0, 19).replace("T", " "));
     if(!old_record[0]){
       return res.status(400).json({ message: 'Camera not found!' });
     }
@@ -404,6 +405,9 @@ router.get('/camera-last-report/:zone_name', verifyToken, requirePermission("las
       (hours * 60 * 60 * 1000) +
       (minutes * 60 * 1000);
 
+    if(old_record[0].last_report === null){
+      old_record[0].last_report = new Date(Date.now()).toISOString().slice(0, 19).replace("T", " ");
+    }
     const lastReport = new Date(old_record[0].last_report).getTime();
     if (Date.now() - lastReport >= LIMIT_MS) {
       const diffMs = new Date(Date.now()) - new Date(old_record[0].last_report);
