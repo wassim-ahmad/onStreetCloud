@@ -391,7 +391,149 @@ exports.getTicketByIdAndType = async (id, type) => {
   return rows;
 };
 
+exports.getDuplicateTicketGroupsByLocationsAllSources = async () => {
+  const query = `
+    SELECT
+      g.location_id,
+      g.location_name,
+      COUNT(*) AS groups_count,
+      SUM(g.duplicate_count) AS tickets_count
+    FROM (
+      SELECT
+        u.plate_number,
+        u.location_id,
+        l.name AS location_name,
+        COUNT(*) AS duplicate_count
+      FROM (
+        -- OCR tickets
+        SELECT t.plate_number, t.entry_time, z.location_id
+        FROM tickets t
+        INNER JOIN cameras c ON c.id = t.camera_id
+        INNER JOIN poles p ON p.id = c.pole_id
+        INNER JOIN zones z ON z.id = p.zone_id
 
+        UNION ALL
+
+        -- OMC tickets
+        SELECT o.plate_number, o.entry_time, z.location_id
+        FROM omctickets o
+        INNER JOIN cameras c ON c.id = o.camera_id
+        INNER JOIN poles p ON p.id = c.pole_id
+        INNER JOIN zones z ON z.id = p.zone_id
+
+        UNION ALL
+
+        -- HOLD tickets
+        SELECT h.plate_number, h.entry_time, z.location_id
+        FROM holdtickets h
+        INNER JOIN cameras c ON c.id = h.camera_id
+        INNER JOIN poles p ON p.id = c.pole_id
+        INNER JOIN zones z ON z.id = p.zone_id
+      ) u
+      INNER JOIN locations l ON l.id = u.location_id
+      GROUP BY
+        u.plate_number,
+        u.location_id,
+        FLOOR(UNIX_TIMESTAMP(u.entry_time) / (15 * 60))
+      HAVING COUNT(*) > 1
+    ) g
+    GROUP BY
+      g.location_id,
+      g.location_name
+    ORDER BY tickets_count DESC;
+  `;
+
+  const [rows] = await pool.query(query);
+  return rows;
+};
+
+exports.getDuplicateTicketGroupsByLocationAllSources = async (locationId) => {
+  const query = `
+    SELECT
+      u.plate_number,
+      u.location_id,
+      l.name AS location_name,
+      MIN(u.entry_time) AS first_entry_time,
+      MAX(u.entry_time) AS last_entry_time,
+      COUNT(*) AS duplicate_count
+    FROM (
+      -- OCR tickets
+      SELECT
+        t.id,
+        t.plate_number,
+        t.entry_time,
+        z.location_id,
+        'ocr' AS ticket_type
+      FROM tickets t
+      INNER JOIN cameras c ON c.id = t.camera_id
+      INNER JOIN poles p ON p.id = c.pole_id
+      INNER JOIN zones z ON z.id = p.zone_id
+
+      UNION ALL
+
+      -- OMC tickets
+      SELECT
+        o.id,
+        o.plate_number,
+        o.entry_time,
+        z.location_id,
+        'omc' AS ticket_type
+      FROM omctickets o
+      INNER JOIN cameras c ON c.id = o.camera_id
+      INNER JOIN poles p ON p.id = c.pole_id
+      INNER JOIN zones z ON z.id = p.zone_id
+
+      UNION ALL
+
+      -- HOLD tickets
+      SELECT
+        h.id,
+        h.plate_number,
+        h.entry_time,
+        z.location_id,
+        'hold' AS ticket_type
+      FROM holdtickets h
+      INNER JOIN cameras c ON c.id = h.camera_id
+      INNER JOIN poles p ON p.id = c.pole_id
+      INNER JOIN zones z ON z.id = p.zone_id
+    ) u
+    INNER JOIN locations l ON l.id = u.location_id
+    WHERE u.location_id = ?
+    GROUP BY
+      u.plate_number,
+      u.location_id,
+      FLOOR(UNIX_TIMESTAMP(u.entry_time) / (15 * 60))
+    HAVING COUNT(*) > 1
+    ORDER BY last_entry_time DESC;
+  `;
+
+  const [rows] = await pool.query(query, [locationId]);
+  return rows;
+};
+
+exports.updateTicketPlateCodeByIdAndType = async (id, type, plateCode, plateCity) => {
+  const tableMap = {
+    ocr: 'tickets',
+    omc: 'omctickets',
+    hold: 'holdtickets'
+  };
+
+  const table = tableMap[type];
+
+  if (!table) {
+    throw new Error('Invalid ticket type');
+  }
+
+  const query = `
+    UPDATE ${table}
+    SET plate_code = ?,
+    plate_city = ?
+    WHERE id = ?
+  `;
+
+  const [result] = await pool.query(query, [plateCode, plateCity, id]);
+  return result;
+};
 
 
 

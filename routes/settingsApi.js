@@ -9,12 +9,28 @@ const submittedTicketsModel = require('../models/Submittedticket');
 const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
 const moment = require('moment');
-
+const fs_promise = require('fs/promises');
 
 const path = require('path');
 const fs = require('fs-extra');
 const ExcelJS = require('exceljs');
 const archiver = require('archiver');
+
+async function deleteFile(filePath) {
+  if (!filePath) return;
+
+  const fullPath = path.resolve(filePath);
+
+  try {
+    await fs_promise.unlink(fullPath);
+    console.log("Deleted file:", fullPath);
+  } catch (err) {
+    if (err.code !== "ENOENT") {
+      console.error("Failed to delete file:", fullPath, err);
+    }
+  }
+}
+
 
 router.get(
   '/settings/all',
@@ -440,8 +456,197 @@ router.delete(
   }
 );
 
+// get duplicated tickets by locations groups
+router.get(
+  '/tickets/duplicates/groups/locations',
+  verifyToken,
+  // requirePermission('view_duplicate_tickets'),
+  async (req, res) => {
+    try {
+      logger.info('get duplicated ticket groups by locations.', { admin: req.user });
 
+      const groups = await settingsModel.getDuplicateTicketGroupsByLocationsAllSources();
 
+      logger.success('get duplicated ticket groups by locations successfully.', {
+        admin: req.user
+      });
+
+      res.json({
+        message: 'Duplicate ticket groups by locations fetched successfully',
+        data: groups
+      });
+    } catch (err) {
+      logger.error('get duplicated ticket groups by locations failed.', {
+        admin: req.user,
+        error: err.message
+      });
+
+      console.error(err);
+      res.status(500).json({
+        message: 'Database error',
+        error: err
+      });
+    }
+  }
+);
+
+// router.get(
+//   '/tickets/duplicates/groups/location/:locationId',
+//   verifyToken,
+//   async (req, res) => {
+//     try {
+//       const locationId = parseInt(req.params.locationId, 10);
+
+//       if (!locationId) {
+//         return res.status(400).json({ message: 'Invalid location id' });
+//       }
+
+//       const data =
+//         await settingsModel.getDuplicateTicketGroupsByLocationAllSources(
+//           locationId
+//         );
+
+//       res.json({
+//         message: 'Duplicate ticket groups fetched successfully',
+//         data
+//       });
+//     } catch (err) {
+//       res.status(500).json({
+//         message: 'Database error',
+//         error: err.message
+//       });
+//     }
+//   }
+// );
+
+// get duplicated tickets groups by single location
+router.get(
+  '/tickets/duplicates/groups/location/:location_id',
+  verifyToken,
+  // requirePermission('view_duplicate_tickets'),
+  async (req, res) => {
+    try {
+      const locationId = parseInt(req.params.location_id, 10);
+
+      if (!locationId) {
+        return res.status(400).json({
+          message: 'location_id is required and must be a number'
+        });
+      }
+
+      logger.info('get duplicated ticket groups by location.', {
+        admin: req.user,
+        location_id: locationId
+      });
+
+      const groups =
+        await settingsModel.getDuplicateTicketGroupsByLocationAllSources(
+          locationId
+        );
+
+      logger.success(
+        'get duplicated ticket groups by location successfully.',
+        { admin: req.user, location_id: locationId }
+      );
+
+      res.json({
+        message: 'Duplicate ticket groups by location fetched successfully',
+        data: groups
+      });
+    } catch (err) {
+      logger.error('get duplicated ticket groups by location failed.', {
+        admin: req.user,
+        error: err.message
+      });
+
+      console.error(err);
+      res.status(500).json({
+        message: 'Database error',
+        error: err.message
+      });
+    }
+  }
+);
+
+router.put(
+  '/tickets/:type/:id/plate-code',
+  verifyToken,
+  upload.none(),
+  // requirePermission('update_ticket'),
+  async (req, res) => {
+    try {
+      const { id, type } = req.params;
+      const { plate_code , plate_city } = req.body;
+
+      const ticketId = parseInt(id, 10);
+
+      if (!ticketId) {
+        return res.status(400).json({
+          message: 'Ticket ID must be a valid number'
+        });
+      }
+
+      if (!['ocr', 'omc', 'hold'].includes(type)) {
+        return res.status(400).json({
+          message: 'Invalid ticket type'
+        });
+      }
+
+      if (!plate_code || !plate_city) {
+        return res.status(400).json({
+          message: 'plate_code and plate_city are required'
+        });
+      }
+
+      logger.info('update ticket plate_code and plate_city', {
+        admin: req.user,
+        ticket_id: ticketId,
+        type,
+        plate_code,
+        plate_city
+      });
+
+      // Optional: check ticket exists
+      const tickets = await settingsModel.getTicketByIdAndType(ticketId, type);
+      if (!tickets.length) {
+        return res.status(404).json({ message: 'Ticket not found' });
+      }
+
+      // Update plate_code
+      const result =
+        await settingsModel.updateTicketPlateCodeByIdAndType(
+          ticketId,
+          type,
+          plate_code,
+          plate_city
+        );
+
+      logger.success('update ticket plate_code and plate_city successfully', {
+        admin: req.user,
+        ticket_id: ticketId,
+        type
+      });
+
+      res.json({
+        message: 'Plate code updated successfully',
+        id: ticketId,
+        type,
+        affectedRows: result.affectedRows
+      });
+
+    } catch (err) {
+      logger.error('update ticket plate_code failed', {
+        admin: req.user,
+        error: err.message
+      });
+
+      res.status(500).json({
+        message: 'Database error',
+        error: err.message
+      });
+    }
+  }
+);
 
 
 
