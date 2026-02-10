@@ -36,7 +36,7 @@
       if(data.data){
         data.data.forEach(cam => {
           if (!cam) return;
-          console.log('this cam ',cam.camera_ip);
+          // console.log('this cam ',cam.camera_ip);
           const div = document.createElement("div");
           div.className = "status-" + (cam.status);
           div.innerText = `${cam.pole_code} → ${cam.camera_ip} → ${cam.status}`;

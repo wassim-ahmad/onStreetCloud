@@ -45,7 +45,8 @@ const {
   getOnlinePoleCameras,
   getOfflinePoleCameras,
   printStatus,
-  allOnlineCameras
+  allOnlineCameras,
+  allOfflineCameras
 } = require("./utils/cameras")
 const notificationModel = require('./models/Notification');
 const userModel = require('./models/user');
@@ -100,6 +101,103 @@ async function getAllCamerasWithStatus() {
   });
 
 }
+
+// async function getAllOfflineCameras() {
+//   const allCamerasFromDB = await cameraModel.getCameras();
+//   const offlineCameras = await allOfflineCameras();
+
+//   return allCamerasFromDB
+//     .filter(dev =>
+//       offlineCameras.some(
+//         d => d.device.camera_ip === dev.camera_ip
+//       )
+//     )
+//     .map(dev => ({
+//       ...dev,
+//       status: 0
+//     }));
+// }
+
+// async function getCamerasByStatus(type = 'all') {
+//   const allCamerasFromDB = await cameraModel.getCameras();
+
+//   let socketCameras = [];
+//   let statusValue = null;
+
+//   if (type === 'online') {
+//     socketCameras = await allOnlineCameras();
+//     statusValue = 1;
+//   }
+
+//   if (type === 'offline') {
+//     socketCameras = await allOfflineCameras();
+//     statusValue = 0;
+//   }
+
+//   const ipSet = new Set(
+//     socketCameras.map(d => d.device.camera_ip)
+//   );
+
+//   return allCamerasFromDB
+//     .filter(dev => type === 'all' || ipSet.has(dev.camera_ip))
+//     .map(dev => ({
+//       ...dev,
+//       status:
+//         type === 'all'
+//           ? ipSet.has(dev.camera_ip)
+//             ? statusValue ?? 1
+//             : 0
+//           : statusValue
+//     }));
+// }
+
+async function getCamerasByStatus(type = 'all') {
+  const allCamerasFromDB = await cameraModel.getCameras();
+  const total = allCamerasFromDB.length;
+
+  const onlineCameras = await allOnlineCameras();
+
+  // Build Set for O(1) lookup
+  const onlineIpSet = new Set(
+    onlineCameras.map(d => d.device.camera_ip)
+  );
+
+  let onlineCount = 0;
+  let offlineCount = 0;
+
+  const camerasWithStatus = allCamerasFromDB.map(dev => {
+    const isOnline = onlineIpSet.has(dev.camera_ip);
+
+    if (isOnline) onlineCount++;
+    else offlineCount++;
+
+    return {
+      ...dev,
+      status: isOnline ? 1 : 0
+    };
+  });
+
+  let filteredData = camerasWithStatus;
+
+  if (type === 'online') {
+    filteredData = camerasWithStatus.filter(c => c.status === 1);
+  }
+
+  if (type === 'offline') {
+    filteredData = camerasWithStatus.filter(c => c.status === 0);
+  }
+
+  return {
+    message: 'All Cameras with status',
+    total,
+    online: onlineCount,
+    offline: offlineCount,
+    data: filteredData
+  };
+}
+
+
+
 // async function excecuteCameraBySocket(integration_data) {
 //   io.to(integration_data.data.pole_code).emit('execute_camera',integration_data);
 // }
@@ -212,7 +310,7 @@ async function getStatisticsTickets(key, value) {
 
 module.exports = {
   getDevicesWithStatus,getCamerasWithStatus, excecuteCameraBySocket, syncCameraBySocket,getAllCamerasWithStatus,
-  fetchAllDevicesFromDB, getStatisticsTickets
+  fetchAllDevicesFromDB, getStatisticsTickets, getCamerasByStatus
 };
 
 // Routes
@@ -398,23 +496,17 @@ io.on("connection", (socket) => {
     // io.to(cam.pole_code).emit("showCameras", getPoleCameras(cam.pole_code) );
 
     // data to send front all camers
-    const all_camerasCount = await cameraModel.getCamerasTotalCount();
-    const all_onlineCamerasCount = await allOnlineCameras().length;
-    const all_offlineCamerasCount = parseInt(all_camerasCount) - parseInt(all_onlineCamerasCount);
-    const all_cameras = await getAllCamerasWithStatus();
+    // const all_camerasCount = await cameraModel.getCamerasTotalCount();
+    // const all_onlineCamerasCount = await allOnlineCameras().length;
+    // const all_offlineCamerasCount = parseInt(all_camerasCount) - parseInt(all_onlineCamerasCount);
+    // const all_cameras = await getAllCamerasWithStatus();
+    const all_cameras = await getCamerasByStatus();
 
-    io.emit("showAllCameras", {
-      total: all_camerasCount,
-      online: all_onlineCamerasCount,
-      offline: all_offlineCamerasCount,
-      data: all_cameras,
-      // links: {
-      //   page,
-      //   limit,
-      //   camerasCount,
-      //   totalPages,
-      // }
-    });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 15;
+    io.emit("showAllCameras", 
+      await getCamerasByStatus()
+    );
     io.emit("showStatisticsCameras", await getStatisticsCameras() );
   });
 

@@ -131,6 +131,10 @@ function allOnlineCameras(){
   return online_cameras;
 }
 
+function allOfflineCameras(){
+  return offline_cameras;
+}
+
 module.exports = {
   cameraOn,
   cameraOff,
@@ -139,5 +143,6 @@ module.exports = {
   getOfflinePoleCameras,
   printStatus,
   removeCamerasByDevice,
-  allOnlineCameras
+  allOnlineCameras,
+  allOfflineCameras
 };

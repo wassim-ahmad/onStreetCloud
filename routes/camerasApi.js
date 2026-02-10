@@ -5,7 +5,7 @@ const upload = multer();
 const { verifyToken } = require('../config/auth');
 const cameraModel = require('../models/Camera'); // camera model
 const Pagination = require('../utils/pagination');
-const { getCamerasWithStatus , excecuteCameraBySocket , getAllCamerasWithStatus} = require('../app');
+const { getCamerasWithStatus, excecuteCameraBySocket, getCamerasByStatus} = require('../app');
 const logger = require('../utils/logger');
 const { requirePermission } = require("../middleware/permission_middleware");
 const { allOnlineCameras , getOnlinePoleCameras } = require("../utils/cameras");
@@ -333,46 +333,138 @@ router.get("/cameras_with_status/:pole_code", verifyToken, requirePermission("vi
   }
 });
 
-router.get("/cameras_all_with_status", verifyToken, requirePermission("view_camera"), async (req, res) => {
-  try {
-    logger.info("get all cameras status: ",{ admin: req.user });
-    const camerasCount = await cameraModel.getCamerasTotalCount();
-    const onlineCamerasCount = await allOnlineCameras().length;
-    const offlineCamerasCount = parseInt(camerasCount) - parseInt(onlineCamerasCount);
-    const cameras = await getAllCamerasWithStatus();
+// router.get("/cameras_all_with_status", verifyToken, requirePermission("view_camera"), async (req, res) => {
+//   try {
+//     logger.info("get all cameras status: ",{ admin: req.user });
+//     const camerasCount = await cameraModel.getCamerasTotalCount();
+//     const onlineCamerasCount = await allOnlineCameras().length;
+//     const offlineCamerasCount = parseInt(camerasCount) - parseInt(onlineCamerasCount);
+//     const cameras = await getAllCamerasWithStatus();
 
-    // pagiantion on array not from the model
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 15;
+//     // pagiantion on array not from the model
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 15;
 
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
+//     const startIndex = (page - 1) * limit;
+//     const endIndex = page * limit;
 
-    const paginatedItems = cameras.slice(startIndex, endIndex);
+//     const paginatedItems = cameras.slice(startIndex, endIndex);
 
-    const totalPages = Math.ceil(camerasCount / limit);
+//     const totalPages = Math.ceil(camerasCount / limit);
 
-    logger.success("get all cameras status successfully", { admin: req.user });
-    res.json({
-      message: 'All Cameras with status',
-      total: camerasCount,
-      online: onlineCamerasCount,
+//     logger.success("get all cameras status successfully", { admin: req.user });
+//     res.json({
+//       message: 'All Cameras with status',
+//       total: camerasCount,
+//       online: onlineCamerasCount,
 
-      offline: offlineCamerasCount,
-      data: paginatedItems,
-      links: {
-        page,
-        limit,
-        camerasCount,
-        totalPages,
-      }
-    });
-  } catch (err) {
-    logger.error('get all cameras failed', { admin: req.user, error: err.message });
-    console.error(err);
-    res.status(500).send("Error fetching poles");
+//       offline: offlineCamerasCount,
+//       data: paginatedItems,
+//       links: {
+//         page,
+//         limit,
+//         camerasCount,
+//         totalPages,
+//       }
+//     });
+//   } catch (err) {
+//     logger.error('get all cameras failed', { admin: req.user, error: err.message });
+//     console.error(err);
+//     res.status(500).send("Error fetching poles");
+//   }
+// });
+
+// router.get("/all_offline_cameras", verifyToken, requirePermission("view_camera"), async (req, res) => {
+//   try {
+    // logger.info("get offline cameras: ",{ admin: req.user });
+    // const camerasCount = await cameraModel.getCamerasTotalCount();
+    // const onlineCamerasCount = await allOnlineCameras().length;
+    // const offlineCamerasCount = parseInt(camerasCount) - parseInt(onlineCamerasCount);
+    // const cameras = await getAllCamerasWithStatus();
+
+    // // pagiantion on array not from the model
+    // const page = parseInt(req.query.page) || 1;
+    // const limit = parseInt(req.query.limit) || 15;
+
+    // const startIndex = (page - 1) * limit;
+    // const endIndex = page * limit;
+
+    // const paginatedItems = cameras.slice(startIndex, endIndex);
+
+    // const totalPages = Math.ceil(camerasCount / limit);
+
+    // logger.success("get all cameras status successfully", { admin: req.user });
+    // res.json({
+    //   message: 'All Cameras with status',
+    //   total: camerasCount,
+    //   online: onlineCamerasCount,
+
+    //   offline: offlineCamerasCount,
+    //   data: paginatedItems,
+    //   links: {
+    //     page,
+    //     limit,
+    //     camerasCount,
+    //     totalPages,
+    //   }
+    // });
+//     res.json({
+//       data2: await getCamerasByStatus('offline'),
+//       data3: await getCamerasByStatus('online'),
+//       data4: await getCamerasByStatus('all')
+//     });
+//   } catch (err) {
+//     logger.error('get all cameras failed', { admin: req.user, error: err.message });
+//     console.error(err);
+//     res.status(500).send("Error fetching poles");
+//   }
+// });
+
+router.get(
+  "/cameras_all_with_status/:orderby",
+  verifyToken,
+  requirePermission("view_camera"),
+  async (req, res) => {
+    try {
+      logger.info("get all cameras status:", { admin: req.user });
+
+      const orderby = req.params.orderby || 'all';
+      
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 15;
+
+      const result = await getCamerasByStatus(orderby);
+
+      // Pagination on array
+      const startIndex = (page - 1) * limit;
+      const endIndex = page * limit;
+      const paginatedItems = result.data.slice(startIndex, endIndex);
+
+      const totalPages = Math.ceil(result.total / limit);
+
+      logger.success("get all cameras status successfully", { admin: req.user });
+
+      res.json({
+        ...result,
+        data: paginatedItems,
+        links: {
+          page,
+          limit,
+          camerasCount: result.total,
+          totalPages
+        }
+      });
+    } catch (err) {
+      logger.error("get all cameras failed", {
+        admin: req.user,
+        error: err.message
+      });
+      res.status(500).send("Error fetching cameras");
+    }
   }
-});
+);
+
+
 
 // last report
 router.get('/camera-last-report/:zone_name', verifyToken, requirePermission("last_report"), async (req, res) => {
